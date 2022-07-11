@@ -1,6 +1,10 @@
 package edu.sfnvm.dseinit.config;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import edu.sfnvm.dseinit.codec.PTHDonCodec;
+import edu.sfnvm.dseinit.codec.THKTDLieuCodec;
+import edu.sfnvm.dseinit.codec.TTTBKTDLieuCodec;
+import edu.sfnvm.dseinit.codec.TTXLKTDLieuCodec;
 import edu.sfnvm.dseinit.repository.mapper.InventoryMapper;
 import edu.sfnvm.dseinit.repository.mapper.InventoryMapperBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,8 +40,13 @@ public class DSEConfig {
         return CqlSession.builder()
                 .addContactPoints(contactPoints)
                 .withLocalDatacenter(localDatacenter)
-                // .withAuthCredentials(username, password)
-                .addTypeCodecs()
+                .withAuthCredentials(username, password)
+                .addTypeCodecs(
+                        new PTHDonCodec(),
+                        new THKTDLieuCodec(),
+                        new TTTBKTDLieuCodec(),
+                        new TTXLKTDLieuCodec()
+                )
                 .build();
     }
 

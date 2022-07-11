@@ -5,6 +5,12 @@ import com.datastax.oss.driver.api.mapper.annotations.Mapper;
 
 @Mapper
 public interface InventoryMapper {
+    // @DaoFactory
+    // TbOneRepository tOneRepository();
+
     @DaoFactory
-    TbOneRepository tOneRepository();
+    TbktdLieuMgrRepository tbktDLieuMgrRepository();
+
+    @DaoFactory
+    TbktdLieuNewRepository tbktDLieuNewRepository();
 }
