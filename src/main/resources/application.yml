@@ -10,5 +10,8 @@ spring:
       local-datacenter: DC1
       connection:
         init-query-timeout: '1000'
+        connect-timeout: 10s
       username: hddt_invoice_code
       password: teca@12#
+server:
+  port: 8081

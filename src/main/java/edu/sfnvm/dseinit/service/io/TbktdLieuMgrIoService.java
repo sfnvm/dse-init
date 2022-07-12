@@ -1,5 +1,10 @@
 package edu.sfnvm.dseinit.service.io;
 
+import com.datastax.oss.driver.api.core.cql.BatchType;
+import com.datastax.oss.driver.api.core.cql.BatchableStatement;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import edu.sfnvm.dseinit.dto.PagingData;
+import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.repository.mapper.InventoryMapper;
 import edu.sfnvm.dseinit.repository.mapper.TbktdLieuMgrRepository;
@@ -13,6 +18,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -23,6 +29,17 @@ public class TbktdLieuMgrIoService {
     @Autowired
     public TbktdLieuMgrIoService(InventoryMapper inventoryMapper) {
         this.tbktDLieuMgrRepository = inventoryMapper.tbktDLieuMgrRepository();
+    }
+
+    public PagingData<TbktdLieuMgr> findWithoutSolrPaging(String queryStr, String pagingState, int size) {
+        return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
+    }
+
+    public TbktdLieuMgr findByPartitionKeys(String mst, Instant ntao, UUID id)
+    throws ResourceNotFoundException {
+        return tbktDLieuMgrRepository
+                .findByPartitionKeys(mst, ntao, id)
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found: TbktdLieuMgr"));
     }
 
     public List<TbktdLieuMgr> findByPartitionKeys(String mst, Instant ntao) {
@@ -53,5 +70,13 @@ public class TbktdLieuMgrIoService {
                 log.error("Connot save entity {}", entity, ex);
             }
         });
+    }
+
+    public BoundStatement boundStatementSave(TbktdLieuMgr entity) {
+        return tbktDLieuMgrRepository.boundStatementSave(entity);
+    }
+
+    public void executeBatch(List<BatchableStatement<?>> batch, BatchType type, int size) {
+        tbktDLieuMgrRepository.executeBatch(batch, type, size);
     }
 }
