@@ -20,7 +20,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -58,25 +57,44 @@ public class RunnerService implements ApplicationRunner {
         log.info("Mannual audit data started at: {}", start);
 
         // bulkInsert();
-        // migrateData();
 
-        String query = String.format(SELECT_TBKTDL_BY_PARTITION, MST, INS.toString());
-        // Init query
-        PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(query, "001f001000120010ffdb5d447b2944eabdc6c091d8ee1836f07ff05c17f07ff05c1700d437f12daeb1b187dae9d273d41503960042", 5000);
+        List<Pair<String, Instant>> conditions = Arrays.stream(Resources.toString(
+                        Objects.requireNonNull(getClass().getResource("/static/conditions")),
+                        StandardCharsets.UTF_8).split("\n"))
+                .filter(StringUtils::hasText)
+                .map(s -> {
+                    String[] split = s.split(";");
+                    return new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1]));
+                }).collect(Collectors.toList());
+        conditions.forEach(c -> {
+            String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
+            log.info("=== Start with query: {}", query);
+            migrate(query);
+        });
+
+        log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
+    }
+
+    private void migrate(String query) {
+        PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(query, null, 500);
 
         final int[] increment = {0};
         while (queryResult.getState() != null) {
-            queryResult.getData().forEach(mgr -> {
-                TbktdLieuNew toInsert = builder(mgr, increment[0] % 86399999, ChronoUnit.MILLIS);
-                tbktDLieuNewIoService.saveAsync(toInsert);
-                increment[0]++;
-            });
-            log.info("Complete migrate data with state: {}", queryResult.getState());
-            log.info("Current increment: {}", increment[0]);
-            queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(query, queryResult.getState(), 1000);
+            loopSave(queryResult, increment);
+            queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(query, queryResult.getState(), 500);
         }
+        // Get last page of records
+        loopSave(queryResult, increment);
+    }
 
-        log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
+    private void loopSave(PagingData<TbktdLieuMgr> queryResult, int[] increment) {
+        queryResult.getData().forEach(mgr -> {
+            TbktdLieuNew toInsert = builder(mgr, increment[0] % 86399999, ChronoUnit.MILLIS);
+            tbktDLieuNewIoService.saveAsync(toInsert);
+            increment[0]++;
+        });
+        log.info("Complete migrate data with state: {}", queryResult.getState());
+        log.info("Current increment: {}", increment[0]);
     }
 
     private void bulkInsert() throws ResourceNotFoundException {
@@ -91,33 +109,10 @@ public class RunnerService implements ApplicationRunner {
         tbktDLieuMgrIoService.executeBatch(batch, BatchType.UNLOGGED, 200);
     }
 
-    private void migrateData() throws IOException {
-        List<Pair<String, Instant>> conditions = Arrays.stream(Resources.toString(
-                        Objects.requireNonNull(getClass().getResource("/static/conditions")),
-                        StandardCharsets.UTF_8).split("\n"))
-                .filter(StringUtils::hasText)
-                .map(s -> {
-                    String[] split = s.split(";");
-                    return new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1]));
-                }).collect(Collectors.toList());
-
-        Map<Pair<String, Instant>, List<TbktdLieuMgr>> result =
-                tbktDLieuMgrIoService.findAndTransformByPartitionKeys(conditions);
-
-        List<TbktdLieuNew> insertList = new ArrayList<>();
-
-        result.values().forEach(tbktDLieuMgrs -> {
-            for (int i = 0; i < tbktDLieuMgrs.size(); i++) {
-                TbktdLieuNew toInsert = builder(tbktDLieuMgrs.get(i), i % 86399999, ChronoUnit.MILLIS);
-                insertList.add(toInsert);
-            }
-        });
-    }
-
     private TbktdLieuNew builder(TbktdLieuMgr sourceData, long incrementValue, ChronoUnit unitType) {
         TbktdLieuNew result = mapper.map(sourceData);
         result.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
-        result.setId(UUID.randomUUID());
+        // result.setId(UUID.randomUUID());
         return result;
     }
 }
