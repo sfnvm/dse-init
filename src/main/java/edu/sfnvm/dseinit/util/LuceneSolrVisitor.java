@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 /**
  * TODO: Tunning<br>
- * https://docs.datastax.com/en/dse/6.8/cql/cql/cql_using/search_index/srchBestPractices.html
+ * <a href="https://docs.datastax.com/en/dse/6.8/cql/cql/cql_using/search_index/srchBestPractices.html">Docs</a>
  */
 @Slf4j
 public class LuceneSolrVisitor implements RSQLVisitor<Query, Void> {
