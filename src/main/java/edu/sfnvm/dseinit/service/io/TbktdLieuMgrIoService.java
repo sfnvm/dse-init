@@ -11,6 +11,8 @@ import edu.sfnvm.dseinit.repository.mapper.TbktdLieuMgrRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.javatuples.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -31,6 +33,11 @@ public class TbktdLieuMgrIoService {
         this.tbktDLieuMgrRepository = inventoryMapper.tbktDLieuMgrRepository();
     }
 
+    @Retryable(
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 10000, multiplier = 2),
+            value = {Exception.class}
+    )
     public PagingData<TbktdLieuMgr> findWithoutSolrPaging(String queryStr, String pagingState, int size) {
         return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
     }

@@ -36,10 +36,6 @@ public class RunnerService implements ApplicationRunner {
 
     private static final String SELECT_TBKTDL_BY_PARTITION =
             "SELECT * FROM ks_hoadon.tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
-    private static final String MST = "0102738332";
-    private static final Instant INS = DateUtil.parseStringToUtcInstant("2022-05-11T00:00:00.000Z");
-    private static final UUID ID = UUID.fromString("79075673-199b-41e8-80fa-445a3848087a");
-
 
     private final TbktdLieuNewMapper mapper = Mappers.getMapper(TbktdLieuNewMapper.class);
 
@@ -56,8 +52,10 @@ public class RunnerService implements ApplicationRunner {
         Instant start = Instant.now();
         log.info("Mannual audit data started at: {}", start);
 
+        // Insert mockData
         // bulkInsert();
 
+        // Main migrate
         List<Pair<String, Instant>> conditions = Arrays.stream(Resources.toString(
                         Objects.requireNonNull(getClass().getResource("/static/conditions")),
                         StandardCharsets.UTF_8).split("\n"))
@@ -76,12 +74,12 @@ public class RunnerService implements ApplicationRunner {
     }
 
     private void migrate(String query) {
-        PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(query, null, 500);
+        PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(query, null, 5000);
 
         final int[] increment = {0};
         while (queryResult.getState() != null) {
             loopSave(queryResult, increment);
-            queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(query, queryResult.getState(), 500);
+            queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(query, queryResult.getState(), 5000);
         }
         // Get last page of records
         loopSave(queryResult, increment);
@@ -98,7 +96,11 @@ public class RunnerService implements ApplicationRunner {
     }
 
     private void bulkInsert() throws ResourceNotFoundException {
-        TbktdLieuMgr sampleModel = tbktDLieuMgrIoService.findByPartitionKeys(MST, INS, ID);
+        final String mst = "0102738332";
+        final Instant ins = DateUtil.parseStringToUtcInstant("2022-05-11T00:00:00.000Z");
+        final UUID id = UUID.fromString("79075673-199b-41e8-80fa-445a3848087a");
+
+        TbktdLieuMgr sampleModel = tbktDLieuMgrIoService.findByPartitionKeys(mst, ins, id);
 
         List<BatchableStatement<?>> batch = new ArrayList<>();
         IntStream.range(0, 1000000).forEach(i -> {
@@ -112,7 +114,6 @@ public class RunnerService implements ApplicationRunner {
     private TbktdLieuNew builder(TbktdLieuMgr sourceData, long incrementValue, ChronoUnit unitType) {
         TbktdLieuNew result = mapper.map(sourceData);
         result.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
-        // result.setId(UUID.randomUUID());
         return result;
     }
 }

@@ -22,8 +22,8 @@ public class TbktdLieuNewIoService {
     }
 
     @Retryable(
-            maxAttempts = 5,
-            backoff = @Backoff(delay = 5000, multiplier = 2),
+            maxAttempts = 10,
+            backoff = @Backoff(delay = 10000, multiplier = 2),
             value = {Exception.class}
     )
     public void saveAsync(TbktdLieuNew entity) {
