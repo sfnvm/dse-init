@@ -2,7 +2,10 @@ package edu.sfnvm.dseinit.service;
 
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
+import com.github.benmanes.caffeine.cache.Cache;
 import com.google.common.io.Resources;
+import edu.sfnvm.dseinit.cache.CacheConstants;
+import edu.sfnvm.dseinit.cache.MgrTimeoutCache;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
 import edu.sfnvm.dseinit.mapper.TbktdLieuNewMapper;
@@ -17,6 +20,8 @@ import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -31,20 +36,34 @@ import java.util.stream.IntStream;
 @Slf4j
 @Service
 public class RunnerService implements ApplicationRunner {
+    /**
+     * <h2>IO Services</h2>
+     */
     private final TbktdLieuMgrIoService tbktDLieuMgrIoService;
     private final TbktdLieuNewIoService tbktDLieuNewIoService;
 
+    /**
+     * <h2>Cache Management</h2>
+     */
+    private final CacheManager cacheManager;
+    private final MgrTimeoutCache mgrTimeoutCache;
+
     private static final String SELECT_TBKTDL_BY_PARTITION =
             "SELECT * FROM ks_hoadon.tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
+    private static final long NANOS_WITHIN_A_DAY = 86399999;
 
     private final TbktdLieuNewMapper mapper = Mappers.getMapper(TbktdLieuNewMapper.class);
 
     @Autowired
     public RunnerService(
             TbktdLieuMgrIoService tbktDLieuMgrIoService,
-            TbktdLieuNewIoService tbktDLieuNewIoService) {
+            TbktdLieuNewIoService tbktDLieuNewIoService,
+            CacheManager cacheManager,
+            MgrTimeoutCache mgrTimeoutCache) {
         this.tbktDLieuMgrIoService = tbktDLieuMgrIoService;
         this.tbktDLieuNewIoService = tbktDLieuNewIoService;
+        this.cacheManager = cacheManager;
+        this.mgrTimeoutCache = mgrTimeoutCache;
     }
 
     @Override
@@ -52,14 +71,10 @@ public class RunnerService implements ApplicationRunner {
         Instant start = Instant.now();
         log.info("Mannual audit data started at: {}", start);
 
-        // Insert mockData
-        // bulkInsert();
-
-        // Main migrate
         List<Pair<String, Instant>> conditions = Arrays.stream(Resources.toString(
                         Objects.requireNonNull(getClass().getResource("/static/conditions")),
                         StandardCharsets.UTF_8).split("\n"))
-                .filter(StringUtils::hasText)
+                .filter(s -> StringUtils.hasLength(s) && !s.startsWith("#"))
                 .map(s -> {
                     String[] split = s.split(";");
                     return new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1]));
@@ -73,28 +88,68 @@ public class RunnerService implements ApplicationRunner {
         log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
     }
 
-    private void migrate(String query) {
-        PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(query, null, 5000);
-
-        final int[] increment = {0};
-        while (queryResult.getState() != null) {
-            loopSave(queryResult, increment);
-            queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(query, queryResult.getState(), 5000);
+    public void retryCached() {
+        List<TbktdLieuNew> toRetry = getCache();
+        mgrTimeoutCache.clearCache();
+        for (TbktdLieuNew tbktdLieuNew : toRetry) {
+            tbktDLieuNewIoService.saveAsync(tbktdLieuNew);
         }
-        // Get last page of records
-        loopSave(queryResult, increment);
     }
 
-    private void loopSave(PagingData<TbktdLieuMgr> queryResult, int[] increment) {
-        queryResult.getData().forEach(mgr -> {
-            TbktdLieuNew toInsert = builder(mgr, increment[0] % 86399999, ChronoUnit.MILLIS);
-            tbktDLieuNewIoService.saveAsync(toInsert);
-            increment[0]++;
-        });
+    public List<TbktdLieuNew> getCache() {
+        CaffeineCache caffeineCache = (CaffeineCache) cacheManager.getCache(CacheConstants.RETRY);
+        assert caffeineCache != null;
+        Cache<Object, Object> nativeCache = caffeineCache.getNativeCache();
+        List<TbktdLieuNew> cachedList = nativeCache.asMap().values().stream()
+                .map(o -> (TbktdLieuNew) o)
+                .collect(Collectors.toList());
+        log.info("Cache current size {}", cachedList.size());
+        return cachedList;
+    }
+
+    public TbktdLieuNew putCache(TbktdLieuNew tbktdLieuNew) {
+        mgrTimeoutCache.cache(null);
+        return mgrTimeoutCache.cache(tbktdLieuNew);
+    }
+
+    public void clearCache() {
+        mgrTimeoutCache.clearCache();
+    }
+
+    private void migrate(String query) {
+        final int[] increment = {0};
+        PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService
+                .findWithoutSolrPaging(query, null, 1000, increment[0]);
+        while (queryResult.getState() != null) {
+            loopSave(queryResult.getData(), increment);
+            queryResult = tbktDLieuMgrIoService
+                    .findWithoutSolrPaging(query, queryResult.getState(), 1000, increment[0]);
+            log.info("Complete migrate data with state: {}", queryResult.getState());
+            log.info("Current increment: {}", increment[0]);
+        }
+        // Last page
+        loopSave(queryResult.getData(), increment);
         log.info("Complete migrate data with state: {}", queryResult.getState());
         log.info("Current increment: {}", increment[0]);
     }
 
+    private void loopSave(List<TbktdLieuMgr> queryResult, int[] increment) {
+        queryResult.forEach(mgr -> {
+            TbktdLieuNew toInsert = builder(mgr, increment[0] % NANOS_WITHIN_A_DAY, ChronoUnit.MILLIS);
+            tbktDLieuNewIoService.saveAsync(toInsert);
+            increment[0]++;
+        });
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private TbktdLieuNew builder(TbktdLieuMgr sourceData, long incrementValue, ChronoUnit unitType) {
+        TbktdLieuNew result = mapper.map(sourceData);
+        result.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
+        return result;
+    }
+
+    @Deprecated
+    @SuppressWarnings("unused")
     private void bulkInsert() throws ResourceNotFoundException {
         final String mst = "0102738332";
         final Instant ins = DateUtil.parseStringToUtcInstant("2022-05-11T00:00:00.000Z");
@@ -109,11 +164,5 @@ public class RunnerService implements ApplicationRunner {
         });
 
         tbktDLieuMgrIoService.executeBatch(batch, BatchType.UNLOGGED, 200);
-    }
-
-    private TbktdLieuNew builder(TbktdLieuMgr sourceData, long incrementValue, ChronoUnit unitType) {
-        TbktdLieuNew result = mapper.map(sourceData);
-        result.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
-        return result;
     }
 }

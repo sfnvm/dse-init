@@ -10,6 +10,7 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
 import edu.sfnvm.dseinit.dto.PagingData;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -89,7 +90,7 @@ public class SliceProvider<T> {
                 .builder(queryStr)
                 .setPageSize(size);
 
-        if (pagingState != null) {
+        if (StringUtils.hasText(pagingState)) {
             statementBuilder.setPagingState(PagingState.fromString(pagingState).getRawPagingState());
         }
 

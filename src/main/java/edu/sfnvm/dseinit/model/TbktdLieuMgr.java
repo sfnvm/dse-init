@@ -71,5 +71,4 @@ public class TbktdLieuMgr {
     private Integer shdon;
     private Instant tdlap;
     private String tlhdon;
-
 }

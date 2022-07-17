@@ -1,5 +1,6 @@
 package edu.sfnvm.dseinit.service.io;
 
+import edu.sfnvm.dseinit.cache.MgrTimeoutCache;
 import edu.sfnvm.dseinit.model.TbktdLieuNew;
 import edu.sfnvm.dseinit.repository.mapper.InventoryMapper;
 import edu.sfnvm.dseinit.repository.mapper.TbktdLieuNewRepository;
@@ -15,10 +16,14 @@ import java.util.List;
 @Service
 public class TbktdLieuNewIoService {
     private final TbktdLieuNewRepository tbktDLieuNewRepository;
+    private final MgrTimeoutCache mgrTimeoutCache;
 
     @Autowired
-    public TbktdLieuNewIoService(InventoryMapper inventoryMapper) {
+    public TbktdLieuNewIoService(
+            InventoryMapper inventoryMapper,
+            MgrTimeoutCache mgrTimeoutCache) {
         this.tbktDLieuNewRepository = inventoryMapper.tbktDLieuNewRepository();
+        this.mgrTimeoutCache = mgrTimeoutCache;
     }
 
     @Retryable(
@@ -30,6 +35,7 @@ public class TbktdLieuNewIoService {
         tbktDLieuNewRepository.saveAsync(entity).whenComplete((unused, ex) -> {
             if (ex != null) {
                 log.error("Connot save entity {}", entity, ex);
+                mgrTimeoutCache.cache(entity);
             }
         });
     }

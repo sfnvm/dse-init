@@ -3,6 +3,7 @@ package edu.sfnvm.dseinit.service.io;
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
+import edu.sfnvm.dseinit.cache.StateTimeoutCache;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
@@ -27,10 +28,14 @@ import java.util.stream.Collectors;
 @Service
 public class TbktdLieuMgrIoService {
     private final TbktdLieuMgrRepository tbktDLieuMgrRepository;
+    private final StateTimeoutCache stateTimeoutCache;
 
     @Autowired
-    public TbktdLieuMgrIoService(InventoryMapper inventoryMapper) {
+    public TbktdLieuMgrIoService(
+            InventoryMapper inventoryMapper,
+            StateTimeoutCache stateTimeoutCache) {
         this.tbktDLieuMgrRepository = inventoryMapper.tbktDLieuMgrRepository();
+        this.stateTimeoutCache = stateTimeoutCache;
     }
 
     @Retryable(
@@ -38,8 +43,14 @@ public class TbktdLieuMgrIoService {
             backoff = @Backoff(delay = 10000, multiplier = 2),
             value = {Exception.class}
     )
-    public PagingData<TbktdLieuMgr> findWithoutSolrPaging(String queryStr, String pagingState, int size) {
-        return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
+    public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
+            String queryStr, String pagingState, int size, int increment) {
+        try {
+            return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
+        } catch (Exception e) {
+            stateTimeoutCache.cache(new Pair<>(pagingState == null ? "" : pagingState, increment));
+            throw e;
+        }
     }
 
     public TbktdLieuMgr findByPartitionKeys(String mst, Instant ntao, UUID id)

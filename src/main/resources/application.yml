@@ -4,10 +4,8 @@ spring:
       request:
         consistency: local_one
         serial-consistency: local_serial
-      #contact-points: 172.20.0.5:9042,172.20.0.2:9042,172.20.0.3:9042
-      contact-points: 10.100.131.130:9042
-      #local-datacenter: dc1
-      local-datacenter: DC1
+      contact-points: 172.20.0.5:9042
+      local-datacenter: dc1
       connection:
         init-query-timeout: '1000'
         connect-timeout: 10s
