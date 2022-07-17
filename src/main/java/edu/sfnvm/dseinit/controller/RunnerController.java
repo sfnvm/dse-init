@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("runner")
+@RequestMapping("runners")
 public class RunnerController {
     private final RunnerService runnerService;
 

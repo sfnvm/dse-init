@@ -31,4 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
-/src/main/resources/application-cn.yml
+
+###
+/src/main/resources/application-cnw.yml
