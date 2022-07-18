@@ -6,7 +6,9 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.google.common.io.Resources;
 import edu.sfnvm.dseinit.cache.CacheConstants;
 import edu.sfnvm.dseinit.cache.MgrTimeoutCache;
+import edu.sfnvm.dseinit.cache.StateTimeoutCache;
 import edu.sfnvm.dseinit.dto.PagingData;
+import edu.sfnvm.dseinit.dto.StateTimeoutDto;
 import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
 import edu.sfnvm.dseinit.mapper.TbktdLieuNewMapper;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
@@ -48,6 +50,7 @@ public class RunnerService implements ApplicationRunner {
      */
     private final CacheManager cacheManager;
     private final MgrTimeoutCache mgrTimeoutCache;
+    private final StateTimeoutCache stateTimeoutCache;
 
     private static final String SELECT_TBKTDL_BY_PARTITION =
             "SELECT * FROM ks_hoadon.tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
@@ -60,11 +63,13 @@ public class RunnerService implements ApplicationRunner {
             TbktdLieuMgrIoService tbktDLieuMgrIoService,
             TbktdLieuNewIoService tbktDLieuNewIoService,
             CacheManager cacheManager,
-            MgrTimeoutCache mgrTimeoutCache) {
+            MgrTimeoutCache mgrTimeoutCache,
+            StateTimeoutCache stateTimeoutCache) {
         this.tbktDLieuMgrIoService = tbktDLieuMgrIoService;
         this.tbktDLieuNewIoService = tbktDLieuNewIoService;
         this.cacheManager = cacheManager;
         this.mgrTimeoutCache = mgrTimeoutCache;
+        this.stateTimeoutCache = stateTimeoutCache;
     }
 
     @Override
@@ -78,7 +83,7 @@ public class RunnerService implements ApplicationRunner {
                     return new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1]));
                 }).collect(Collectors.toList());
 
-        if (CollectionUtils.isEmpty(conditions)) {
+        if (!CollectionUtils.isEmpty(conditions)) {
             Instant start = Instant.now();
             log.info("Mannual audit data started at: {}", start);
             conditions.forEach(c -> {
@@ -91,17 +96,27 @@ public class RunnerService implements ApplicationRunner {
     }
 
     public void retryCached() {
-        List<TbktdLieuNew> toRetry = getCache();
+        // Retry async failed
+        List<TbktdLieuNew> toRetry = getMgrTimeoutCache();
         mgrTimeoutCache.clearCache();
         for (TbktdLieuNew tbktdLieuNew : toRetry) {
             tbktDLieuNewIoService.saveAsync(tbktdLieuNew);
         }
+        // Retry paging failed
+        List<StateTimeoutDto> stateToRetry = getStateTimeoutCache();
+        mgrTimeoutCache.clearCache();
+        for (StateTimeoutDto dto : stateToRetry) {
+            PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(
+                    dto.getQuery(),
+                    dto.getState(),
+                    dto.getQuerySize(),
+                    dto.getIncrement());
+            loopSave(queryResult.getData(), new int[]{dto.getIncrement()});
+        }
     }
 
-    public List<TbktdLieuNew> getCache() {
-        CaffeineCache caffeineCache = (CaffeineCache) cacheManager.getCache(CacheConstants.RETRY);
-        assert caffeineCache != null;
-        Cache<Object, Object> nativeCache = caffeineCache.getNativeCache();
+    public List<TbktdLieuNew> getMgrTimeoutCache() {
+        Cache<Object, Object> nativeCache = getCache(CacheConstants.RETRY);
         List<TbktdLieuNew> cachedList = nativeCache.asMap().values().stream()
                 .map(o -> (TbktdLieuNew) o)
                 .collect(Collectors.toList());
@@ -109,13 +124,31 @@ public class RunnerService implements ApplicationRunner {
         return cachedList;
     }
 
-    public TbktdLieuNew putCache(TbktdLieuNew tbktdLieuNew) {
-        mgrTimeoutCache.cache(null);
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public List<StateTimeoutDto> getStateTimeoutCache() {
+        Cache<Object, Object> nativeCache = getCache(CacheConstants.STATE);
+        List cachedList = nativeCache.asMap().values().stream()
+                .map(o -> (StateTimeoutDto) o)
+                .collect(Collectors.toList());
+        log.info("Cache current size {}", cachedList.size());
+        return cachedList;
+    }
+
+    public TbktdLieuNew putMgrTimeoutCache(TbktdLieuNew tbktdLieuNew) {
         return mgrTimeoutCache.cache(tbktdLieuNew);
     }
 
-    public void clearCache() {
+    public StateTimeoutDto putStateTimeoutCache(StateTimeoutDto stateTimeoutDto) {
+        stateTimeoutCache.cache(stateTimeoutDto);
+        return stateTimeoutCache.cache(stateTimeoutDto);
+    }
+
+    public void clearMgrTimeoutCache() {
         mgrTimeoutCache.clearCache();
+    }
+
+    public void clearStateTimeoutCache() {
+        stateTimeoutCache.clearCache();
     }
 
     private void migrate(String query) {
@@ -148,6 +181,12 @@ public class RunnerService implements ApplicationRunner {
         TbktdLieuNew result = mapper.map(sourceData);
         result.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
         return result;
+    }
+
+    private Cache<Object, Object> getCache(String cacheName) {
+        CaffeineCache caffeineCache = (CaffeineCache) cacheManager.getCache(cacheName);
+        assert caffeineCache != null;
+        return caffeineCache.getNativeCache();
     }
 
     @Deprecated

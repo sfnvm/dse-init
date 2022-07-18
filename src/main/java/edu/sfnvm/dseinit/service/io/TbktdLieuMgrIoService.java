@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import edu.sfnvm.dseinit.cache.StateTimeoutCache;
 import edu.sfnvm.dseinit.dto.PagingData;
+import edu.sfnvm.dseinit.dto.StateTimeoutDto;
 import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.repository.mapper.InventoryMapper;
@@ -48,7 +49,12 @@ public class TbktdLieuMgrIoService {
         try {
             return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
         } catch (Exception e) {
-            stateTimeoutCache.cache(new Pair<>(pagingState == null ? "" : pagingState, increment));
+            stateTimeoutCache.cache(StateTimeoutDto.builder()
+                    .query(queryStr)
+                    .state(pagingState)
+                    .increment(increment)
+                    .querySize(size)
+                    .build());
             throw e;
         }
     }

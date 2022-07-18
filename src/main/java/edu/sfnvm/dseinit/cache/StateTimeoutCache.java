@@ -1,7 +1,7 @@
 package edu.sfnvm.dseinit.cache;
 
+import edu.sfnvm.dseinit.dto.StateTimeoutDto;
 import lombok.extern.slf4j.Slf4j;
-import org.javatuples.Pair;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -10,9 +10,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class StateTimeoutCache {
     @Cacheable(value = CacheConstants.STATE, sync = true)
-    public Pair<String, Integer> cache(Pair<String, Integer> value) {
-        log.info("Cache miss {} for value: {}", CacheConstants.STATE, value);
-        return value;
+    public StateTimeoutDto cache(StateTimeoutDto stateTimeoutDto) {
+        log.info("Cache miss {} for value: {}", CacheConstants.STATE, stateTimeoutDto);
+        return stateTimeoutDto;
     }
 
     @CacheEvict(value = CacheConstants.STATE, allEntries = true)

@@ -2,7 +2,6 @@ package edu.sfnvm.dseinit.model;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.datastax.oss.driver.api.mapper.entity.naming.NamingConvention;
-import com.sun.istack.internal.NotNull;
 import edu.sfnvm.dseinit.model.enums.PTHDon;
 import edu.sfnvm.dseinit.model.enums.THKTDLieu;
 import edu.sfnvm.dseinit.model.enums.TTTBKTDLieu;
@@ -29,7 +28,6 @@ public class TbktdLieuNew {
     @PartitionKey(1)
     private String mst;
 
-    @NotNull
     @PartitionKey(2)
     private Instant ntao;
 
