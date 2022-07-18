@@ -23,6 +23,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -68,9 +69,6 @@ public class RunnerService implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        Instant start = Instant.now();
-        log.info("Mannual audit data started at: {}", start);
-
         List<Pair<String, Instant>> conditions = Arrays.stream(Resources.toString(
                         Objects.requireNonNull(getClass().getResource("/static/conditions")),
                         StandardCharsets.UTF_8).split("\n"))
@@ -79,13 +77,17 @@ public class RunnerService implements ApplicationRunner {
                     String[] split = s.split(";");
                     return new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1]));
                 }).collect(Collectors.toList());
-        conditions.forEach(c -> {
-            String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
-            log.info("=== Start with query: {}", query);
-            migrate(query);
-        });
 
-        log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
+        if (CollectionUtils.isEmpty(conditions)) {
+            Instant start = Instant.now();
+            log.info("Mannual audit data started at: {}", start);
+            conditions.forEach(c -> {
+                String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
+                log.info("=== Start with query: {}", query);
+                migrate(query);
+            });
+            log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
+        }
     }
 
     public void retryCached() {
@@ -117,7 +119,7 @@ public class RunnerService implements ApplicationRunner {
     }
 
     private void migrate(String query) {
-        final int[] increment = {0};
+        final int[] increment = {1};
         PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService
                 .findWithoutSolrPaging(query, null, 1000, increment[0]);
         while (queryResult.getState() != null) {
