@@ -24,10 +24,10 @@ public class SolrSearch {
      * REF
      * </a>
      * <br>
-     * <code>
+     * <p>
      * To dynamically enable paging when cql_solr_query_paging is set to off in dse.yaml,
      * set the Solr paging parameter to driver ("paging":"driver")
-     * </code>
+     * </p>
      */
     @JsonProperty("paging")
     @Builder.Default

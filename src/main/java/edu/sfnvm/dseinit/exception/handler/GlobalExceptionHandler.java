@@ -1,4 +1,4 @@
-package edu.sfnvm.dseinit.handler;
+package edu.sfnvm.dseinit.exception.handler;
 
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
 import edu.sfnvm.dseinit.dto.ErrorDetail;
