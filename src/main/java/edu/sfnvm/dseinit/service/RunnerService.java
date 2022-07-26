@@ -2,17 +2,17 @@ package edu.sfnvm.dseinit.service;
 
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
-import com.github.benmanes.caffeine.cache.Cache;
 import com.google.common.io.Resources;
-import edu.sfnvm.dseinit.cache.CacheConstants;
 import edu.sfnvm.dseinit.cache.MgrTimeoutCache;
 import edu.sfnvm.dseinit.cache.StateTimeoutCache;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.dto.StateTimeoutDto;
+import edu.sfnvm.dseinit.dto.enums.SaveType;
 import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
 import edu.sfnvm.dseinit.mapper.TbktdLieuNewMapper;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.model.TbktdLieuNew;
+import edu.sfnvm.dseinit.service.io.CacheIoService;
 import edu.sfnvm.dseinit.service.io.TbktdLieuMgrIoService;
 import edu.sfnvm.dseinit.service.io.TbktdLieuNewIoService;
 import edu.sfnvm.dseinit.util.DateUtil;
@@ -22,8 +22,6 @@ import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -45,16 +43,13 @@ public class RunnerService implements ApplicationRunner {
     private final TbktdLieuMgrIoService tbktDLieuMgrIoService;
     private final TbktdLieuNewIoService tbktDLieuNewIoService;
 
-    /**
-     * <h2>Cache Management</h2>
-     */
-    private final CacheManager cacheManager;
     private final MgrTimeoutCache mgrTimeoutCache;
     private final StateTimeoutCache stateTimeoutCache;
+    private final CacheIoService cacheIoService;
 
     private static final String SELECT_TBKTDL_BY_PARTITION =
             "SELECT * FROM ks_hoadon.tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
-    private static final long NANOS_WITHIN_A_DAY = 86399999;
+    private static final long NANOS_WITHIN_A_DAY = 86399998; // Start from 1
 
     private final TbktdLieuNewMapper mapper = Mappers.getMapper(TbktdLieuNewMapper.class);
 
@@ -62,14 +57,14 @@ public class RunnerService implements ApplicationRunner {
     public RunnerService(
             TbktdLieuMgrIoService tbktDLieuMgrIoService,
             TbktdLieuNewIoService tbktDLieuNewIoService,
-            CacheManager cacheManager,
             MgrTimeoutCache mgrTimeoutCache,
-            StateTimeoutCache stateTimeoutCache) {
+            StateTimeoutCache stateTimeoutCache,
+            CacheIoService cacheIoService) {
         this.tbktDLieuMgrIoService = tbktDLieuMgrIoService;
         this.tbktDLieuNewIoService = tbktDLieuNewIoService;
-        this.cacheManager = cacheManager;
         this.mgrTimeoutCache = mgrTimeoutCache;
         this.stateTimeoutCache = stateTimeoutCache;
+        this.cacheIoService = cacheIoService;
     }
 
     @Override
@@ -89,49 +84,12 @@ public class RunnerService implements ApplicationRunner {
             conditions.forEach(c -> {
                 String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
                 log.info("=== Start with query: {}", query);
-                migrate(query);
+                migrate(query, SaveType.ASYNC);
             });
             log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
+        } else {
+            log.info("Condition list empty, skip migrate tbktdlieu");
         }
-    }
-
-    public void retryCached() {
-        // Retry async failed
-        List<TbktdLieuNew> toRetry = getMgrTimeoutCache();
-        mgrTimeoutCache.clearCache();
-        for (TbktdLieuNew tbktdLieuNew : toRetry) {
-            tbktDLieuNewIoService.saveAsync(tbktdLieuNew);
-        }
-        // Retry paging failed
-        List<StateTimeoutDto> stateToRetry = getStateTimeoutCache();
-        mgrTimeoutCache.clearCache();
-        for (StateTimeoutDto dto : stateToRetry) {
-            PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(
-                    dto.getQuery(),
-                    dto.getState(),
-                    dto.getQuerySize(),
-                    dto.getIncrement());
-            loopSave(queryResult.getData(), new int[]{dto.getIncrement()});
-        }
-    }
-
-    public List<TbktdLieuNew> getMgrTimeoutCache() {
-        Cache<Object, Object> nativeCache = getCache(CacheConstants.RETRY);
-        List<TbktdLieuNew> cachedList = nativeCache.asMap().values().stream()
-                .map(o -> (TbktdLieuNew) o)
-                .collect(Collectors.toList());
-        log.info("Cache current size {}", cachedList.size());
-        return cachedList;
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public List<StateTimeoutDto> getStateTimeoutCache() {
-        Cache<Object, Object> nativeCache = getCache(CacheConstants.STATE);
-        List cachedList = nativeCache.asMap().values().stream()
-                .map(o -> (StateTimeoutDto) o)
-                .collect(Collectors.toList());
-        log.info("Cache current size {}", cachedList.size());
-        return cachedList;
     }
 
     public TbktdLieuNew putMgrTimeoutCache(TbktdLieuNew tbktdLieuNew) {
@@ -151,29 +109,42 @@ public class RunnerService implements ApplicationRunner {
         stateTimeoutCache.clearCache();
     }
 
-    private void migrate(String query) {
+    @SuppressWarnings("SameParameterValue")
+    private void migrate(String query, SaveType saveType) {
         final int[] increment = {1};
         PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService
                 .findWithoutSolrPaging(query, null, 1000, increment[0]);
         while (queryResult.getState() != null) {
-            loopSave(queryResult.getData(), increment);
+            loopSave(queryResult.getData(), increment, saveType);
             queryResult = tbktDLieuMgrIoService
                     .findWithoutSolrPaging(query, queryResult.getState(), 1000, increment[0]);
             log.info("Complete migrate data with state: {}", queryResult.getState());
             log.info("Current increment: {}", increment[0]);
         }
         // Last page
-        loopSave(queryResult.getData(), increment);
+        loopSave(queryResult.getData(), increment, saveType);
         log.info("Complete migrate data with state: {}", queryResult.getState());
         log.info("Current increment: {}", increment[0]);
     }
 
-    private void loopSave(List<TbktdLieuMgr> queryResult, int[] increment) {
-        queryResult.forEach(mgr -> {
-            TbktdLieuNew toInsert = builder(mgr, increment[0] % NANOS_WITHIN_A_DAY, ChronoUnit.MILLIS);
-            tbktDLieuNewIoService.saveAsync(toInsert);
+    void loopSave(List<TbktdLieuMgr> queryResult, int[] increment, SaveType saveType) {
+        List<TbktdLieuNew> migratedList = queryResult.stream().map(mgr -> {
             increment[0]++;
-        });
+            return builder(mgr, increment[0] % NANOS_WITHIN_A_DAY, ChronoUnit.MILLIS);
+        }).collect(Collectors.toList());
+
+        switch (saveType) {
+            case ASYNC: {
+                migratedList.forEach(tbktDLieuNewIoService::saveAsync);
+                break;
+            }
+            case PREPARED: {
+                tbktDLieuNewIoService.saveList(migratedList);
+                break;
+            }
+            default:
+                log.error("Save strategy not supported");
+        }
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -181,12 +152,6 @@ public class RunnerService implements ApplicationRunner {
         TbktdLieuNew result = mapper.map(sourceData);
         result.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
         return result;
-    }
-
-    private Cache<Object, Object> getCache(String cacheName) {
-        CaffeineCache caffeineCache = (CaffeineCache) cacheManager.getCache(cacheName);
-        assert caffeineCache != null;
-        return caffeineCache.getNativeCache();
     }
 
     @Deprecated

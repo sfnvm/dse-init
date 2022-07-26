@@ -12,8 +12,14 @@ import java.util.concurrent.CompletionStage;
 @Dao
 public interface TbktdLieuNewRepository {
     @Insert
-    CompletionStage<Void> saveAsync(TbktdLieuNew tbktDLieuNew);
+    CompletionStage<Void> saveAsync(TbktdLieuNew entity);
+
+    @Insert
+    void save(TbktdLieuNew entity);
 
     @QueryProvider(providerClass = TbktdLieuNewProvider.class, entityHelpers = TbktdLieuNew.class)
-    void saveList(List<TbktdLieuNew> items) throws Exception;
+    void saveList(List<TbktdLieuNew> items);
+
+    @QueryProvider(providerClass = TbktdLieuNewProvider.class, entityHelpers = TbktdLieuNew.class)
+    List<TbktdLieuNew> saveListReturnFailed(List<TbktdLieuNew> items);
 }

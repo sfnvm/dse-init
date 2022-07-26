@@ -61,8 +61,11 @@ public class BaseService {
     }
 
     /**
-     * [REF1](https://docs.datastax.com/en/dse/6.8/cql/cql/cql_using/search_index/siQuerySyntax.html)
-     * [REF2](https://solr.apache.org/guide/6_6/the-standard-query-parser.html)
+     * <a href="https://docs.datastax.com/en/dse/6.8/cql/cql/cql_using/search_index/siQuerySyntax.html">[REF1]</a>
+     * <p>siQuerySyntax</p>
+     * <br>
+     * <a href="https://solr.apache.org/guide/6_6/the-standard-query-parser.html">[REF2]</a>
+     * <p>the-standard-query-parser</p>
      */
     protected <T> SolrSearch solrQueryBuilder(String search, List<String> sorts, Query additionalQuery, Class<T> clazz) {
         if (search == null || search.isEmpty()) {

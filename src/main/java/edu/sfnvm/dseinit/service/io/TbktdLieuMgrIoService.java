@@ -8,7 +8,7 @@ import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.dto.StateTimeoutDto;
 import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
-import edu.sfnvm.dseinit.repository.mapper.InventoryMapper;
+import edu.sfnvm.dseinit.repository.inventory.InventoryMapper;
 import edu.sfnvm.dseinit.repository.mapper.TbktdLieuMgrRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.javatuples.Pair;

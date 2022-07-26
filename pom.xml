@@ -107,6 +107,12 @@
             <artifactId>javatuples</artifactId>
             <version>1.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.jeasy</groupId>
+            <artifactId>easy-random-core</artifactId>
+            <!--suppress MavenPackageUpdate -->
+            <version>4.3.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.retry</groupId>
