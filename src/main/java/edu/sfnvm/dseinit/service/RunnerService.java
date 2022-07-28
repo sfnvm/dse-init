@@ -1,18 +1,14 @@
 package edu.sfnvm.dseinit.service;
 
-import com.datastax.oss.driver.api.core.cql.BatchType;
-import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.google.common.io.Resources;
 import edu.sfnvm.dseinit.cache.MgrTimeoutCache;
 import edu.sfnvm.dseinit.cache.StateTimeoutCache;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.dto.StateTimeoutDto;
 import edu.sfnvm.dseinit.dto.enums.SaveType;
-import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
 import edu.sfnvm.dseinit.mapper.TbktdLieuNewMapper;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.model.TbktdLieuNew;
-import edu.sfnvm.dseinit.service.io.CacheIoService;
 import edu.sfnvm.dseinit.service.io.TbktdLieuMgrIoService;
 import edu.sfnvm.dseinit.service.io.TbktdLieuNewIoService;
 import edu.sfnvm.dseinit.util.DateUtil;
@@ -30,9 +26,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -40,12 +37,11 @@ public class RunnerService implements ApplicationRunner {
     /**
      * <h2>IO Services</h2>
      */
-    private final TbktdLieuMgrIoService tbktDLieuMgrIoService;
-    private final TbktdLieuNewIoService tbktDLieuNewIoService;
+    private final TbktdLieuMgrIoService tbktdLieuMgrIoService;
+    private final TbktdLieuNewIoService tbktdLieuNewIoService;
 
     private final MgrTimeoutCache mgrTimeoutCache;
     private final StateTimeoutCache stateTimeoutCache;
-    private final CacheIoService cacheIoService;
 
     private static final String SELECT_TBKTDL_BY_PARTITION =
             "SELECT * FROM ks_hoadon.tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
@@ -55,16 +51,14 @@ public class RunnerService implements ApplicationRunner {
 
     @Autowired
     public RunnerService(
-            TbktdLieuMgrIoService tbktDLieuMgrIoService,
-            TbktdLieuNewIoService tbktDLieuNewIoService,
+            TbktdLieuMgrIoService tbktdLieuMgrIoService,
+            TbktdLieuNewIoService tbktdLieuNewIoService,
             MgrTimeoutCache mgrTimeoutCache,
-            StateTimeoutCache stateTimeoutCache,
-            CacheIoService cacheIoService) {
-        this.tbktDLieuMgrIoService = tbktDLieuMgrIoService;
-        this.tbktDLieuNewIoService = tbktDLieuNewIoService;
+            StateTimeoutCache stateTimeoutCache) {
+        this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
+        this.tbktdLieuNewIoService = tbktdLieuNewIoService;
         this.mgrTimeoutCache = mgrTimeoutCache;
         this.stateTimeoutCache = stateTimeoutCache;
-        this.cacheIoService = cacheIoService;
     }
 
     @Override
@@ -84,7 +78,7 @@ public class RunnerService implements ApplicationRunner {
             conditions.forEach(c -> {
                 String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
                 log.info("=== Start with query: {}", query);
-                migrate(query, SaveType.ASYNC);
+                migrate(query, SaveType.PREPARED);
             });
             log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
         } else {
@@ -112,11 +106,11 @@ public class RunnerService implements ApplicationRunner {
     @SuppressWarnings("SameParameterValue")
     private void migrate(String query, SaveType saveType) {
         final int[] increment = {1};
-        PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService
+        PagingData<TbktdLieuMgr> queryResult = tbktdLieuMgrIoService
                 .findWithoutSolrPaging(query, null, 1000, increment[0]);
         while (queryResult.getState() != null) {
             loopSave(queryResult.getData(), increment, saveType);
-            queryResult = tbktDLieuMgrIoService
+            queryResult = tbktdLieuMgrIoService
                     .findWithoutSolrPaging(query, queryResult.getState(), 1000, increment[0]);
             log.info("Complete migrate data with state: {}", queryResult.getState());
             log.info("Current increment: {}", increment[0]);
@@ -129,17 +123,18 @@ public class RunnerService implements ApplicationRunner {
 
     void loopSave(List<TbktdLieuMgr> queryResult, int[] increment, SaveType saveType) {
         List<TbktdLieuNew> migratedList = queryResult.stream().map(mgr -> {
+            TbktdLieuNew tmp = builder(mgr, increment[0] % NANOS_WITHIN_A_DAY, ChronoUnit.MILLIS);
             increment[0]++;
-            return builder(mgr, increment[0] % NANOS_WITHIN_A_DAY, ChronoUnit.MILLIS);
+            return tmp;
         }).collect(Collectors.toList());
 
         switch (saveType) {
             case ASYNC: {
-                migratedList.forEach(tbktDLieuNewIoService::saveAsync);
+                migratedList.forEach(tbktdLieuNewIoService::saveAsync);
                 break;
             }
             case PREPARED: {
-                tbktDLieuNewIoService.saveList(migratedList);
+                tbktdLieuNewIoService.saveList(migratedList);
                 break;
             }
             default:
@@ -148,27 +143,12 @@ public class RunnerService implements ApplicationRunner {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private TbktdLieuNew builder(TbktdLieuMgr sourceData, long incrementValue, ChronoUnit unitType) {
+    private TbktdLieuNew builder(
+            TbktdLieuMgr sourceData,
+            long incrementValue,
+            ChronoUnit unitType) {
         TbktdLieuNew result = mapper.map(sourceData);
         result.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
         return result;
-    }
-
-    @Deprecated
-    @SuppressWarnings("unused")
-    private void bulkInsert() throws ResourceNotFoundException {
-        final String mst = "0102738332";
-        final Instant ins = DateUtil.parseStringToUtcInstant("2022-05-11T00:00:00.000Z");
-        final UUID id = UUID.fromString("79075673-199b-41e8-80fa-445a3848087a");
-
-        TbktdLieuMgr sampleModel = tbktDLieuMgrIoService.findByPartitionKeys(mst, ins, id);
-
-        List<BatchableStatement<?>> batch = new ArrayList<>();
-        IntStream.range(0, 1000000).forEach(i -> {
-            sampleModel.setId(UUID.randomUUID());
-            batch.add(tbktDLieuMgrIoService.boundStatementSave(sampleModel));
-        });
-
-        tbktDLieuMgrIoService.executeBatch(batch, BatchType.UNLOGGED, 200);
     }
 }

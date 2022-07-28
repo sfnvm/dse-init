@@ -33,7 +33,7 @@ public class CacheIoService {
                 .stream()
                 .map(o -> (TbktdLieuNew) o)
                 .collect(Collectors.toList());
-        log.info("Cache current size {}", cachedList.size());
+        log.debug("Cache current size {}", cachedList.size());
         return cachedList;
     }
 
@@ -46,7 +46,7 @@ public class CacheIoService {
                 .stream()
                 .map(o -> (StateTimeoutDto) o)
                 .collect(Collectors.toList());
-        log.info("Cache current size {}", cachedList.size());
+        log.debug("Cache current size {}", cachedList.size());
         return cachedList;
     }
 

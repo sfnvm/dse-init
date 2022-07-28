@@ -2,6 +2,7 @@ package edu.sfnvm.dseinit.exception.handler;
 
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
 import edu.sfnvm.dseinit.dto.ErrorDetail;
+import edu.sfnvm.dseinit.exception.CustomException;
 import edu.sfnvm.dseinit.exception.EntityValidationException;
 import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,18 @@ public class GlobalExceptionHandler {
     @Autowired
     public GlobalExceptionHandler(MessageSource messageSource) {
         this.messageSource = messageSource;
+    }
+
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<ErrorDetail> customException(
+            ResourceNotFoundException ex,
+            WebRequest request) {
+        ErrorDetail errorDetail = new ErrorDetail(
+                Instant.now(),
+                ex.getMessage(),
+                "",
+                request.getDescription(false));
+        return new ResponseEntity<>(errorDetail, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

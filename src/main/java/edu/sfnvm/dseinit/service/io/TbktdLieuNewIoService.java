@@ -10,8 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 
 @Slf4j
@@ -79,9 +77,6 @@ public class TbktdLieuNewIoService {
     }
 
     public void benchmarkSave(List<TbktdLieuNew> entityList, SaveType type) {
-        Instant startMark = Instant.now();
-        log.info("Start {} List<TbktdLieuNew> with prepared statement privider", type);
-
         switch (type) {
             case SIMPLE:
                 for (TbktdLieuNew e : entityList) {
@@ -99,9 +94,5 @@ public class TbktdLieuNewIoService {
             default:
                 log.error("Type not supported");
         }
-
-        log.info(
-                "Start {} List<TbktdLieuNew> with prepared statement privider {}",
-                type, Duration.between(startMark, Instant.now()));
     }
 }

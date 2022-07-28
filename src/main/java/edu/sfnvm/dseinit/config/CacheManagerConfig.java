@@ -17,6 +17,6 @@ public class CacheManagerConfig {
 
     @Bean
     public Caffeine<Object, Object> caffeineConfig() {
-        return Caffeine.newBuilder().maximumSize(100000);
+        return Caffeine.newBuilder().maximumSize(1000000);
     }
 }

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class StateTimeoutCache {
     @Cacheable(value = CacheConstants.STATE, sync = true)
     public StateTimeoutDto cache(StateTimeoutDto stateTimeoutDto) {
-        log.info("Cache miss {} for value: {}", CacheConstants.STATE, stateTimeoutDto);
+        // log.info("Cache miss {} for value: {}", CacheConstants.STATE, stateTimeoutDto);
         return stateTimeoutDto;
     }
 

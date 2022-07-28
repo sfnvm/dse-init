@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class MgrTimeoutCache {
     @Cacheable(value = CacheConstants.RETRY, sync = true)
     public TbktdLieuNew cache(TbktdLieuNew entity) {
-        log.info("Cache miss {} for value: {}", CacheConstants.RETRY, entity);
+        // log.info("Cache miss {} for value: {}", CacheConstants.RETRY, entity);
         return entity;
     }
 

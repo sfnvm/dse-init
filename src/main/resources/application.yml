@@ -16,6 +16,6 @@ spring:
       password: teca@12#
 server:
   port: 8081
-logging:
-  pattern:
-    console: '%d{yyyy-MM-dd HH:mm:ss} - %msg%n'
+#logging:
+#  pattern:
+#    console: '%d{yyyy-MM-dd HH:mm:ss} - %msg%n'
