@@ -45,7 +45,8 @@ public class RunnerService implements ApplicationRunner {
 
     private static final String SELECT_TBKTDL_BY_PARTITION =
             "SELECT * FROM ks_hoadon.tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
-    private static final long NANOS_WITHIN_A_DAY = 86399998; // Start from 1
+    // private static final long NANOS_WITHIN_A_DAY = 86399998; 86400000
+    private static final long NANOS_WITHIN_A_DAY = 25199998; // 25200000
 
     private final TbktdLieuNewMapper mapper = Mappers.getMapper(TbktdLieuNewMapper.class);
 
