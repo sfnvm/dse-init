@@ -45,7 +45,7 @@ public class RunnerService implements ApplicationRunner {
     private final StateTimeoutCache stateTimeoutCache;
 
     private static final String SELECT_TBKTDL_BY_PARTITION =
-            "SELECT * FROM ks_hoadon.tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
+            "SELECT * FROM ks_hoadon.hddt_tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
 
     private final TbktdLieuNewMapper mapper = Mappers.getMapper(TbktdLieuNewMapper.class);
 
