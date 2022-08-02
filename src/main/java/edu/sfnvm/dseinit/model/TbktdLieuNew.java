@@ -23,7 +23,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity(defaultKeyspace = "ks_hoadon")
 @NamingStrategy(convention = NamingConvention.CASE_INSENSITIVE)
-@CqlName("tbktdl_target")
+@CqlName("hddt_tbktdl_target")
 public class TbktdLieuNew {
     @PartitionKey(1)
     private String mst;
