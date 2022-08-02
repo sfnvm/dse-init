@@ -7,13 +7,17 @@ spring:
       request:
         consistency: local_one
         serial-consistency: local_serial
-      contact-points: 172.20.0.5:9042
-      local-datacenter: dc1
+      contact-points: 10.64.112.23:9042
+      #contact-points: 172.20.0.5:9042
+      local-datacenter: DC_Trans_Search
+      #local-datacenter: dc1
       connection:
         init-query-timeout: '1000'
         connect-timeout: 10s
-      username: hddt_invoice_code
-      password: teca@12#
+      username: cassandra
+      #username: hddt_invoice_code
+      password: 88zMG7qxHvMS9AcDhspH
+      #password: teca@12#
 server:
   port: 8081
 #logging:

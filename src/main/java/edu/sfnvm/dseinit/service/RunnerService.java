@@ -3,6 +3,7 @@ package edu.sfnvm.dseinit.service;
 import com.google.common.io.Resources;
 import edu.sfnvm.dseinit.cache.MgrTimeoutCache;
 import edu.sfnvm.dseinit.cache.StateTimeoutCache;
+import edu.sfnvm.dseinit.constant.TimeMarkConstant;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.dto.StateTimeoutDto;
 import edu.sfnvm.dseinit.dto.enums.SaveType;
@@ -45,8 +46,6 @@ public class RunnerService implements ApplicationRunner {
 
     private static final String SELECT_TBKTDL_BY_PARTITION =
             "SELECT * FROM ks_hoadon.tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
-    // private static final long NANOS_WITHIN_A_DAY = 86399998; 86400000
-    private static final long NANOS_WITHIN_A_DAY = 25199998; // 25200000
 
     private final TbktdLieuNewMapper mapper = Mappers.getMapper(TbktdLieuNewMapper.class);
 
@@ -85,6 +84,7 @@ public class RunnerService implements ApplicationRunner {
         } else {
             log.info("Condition list empty, skip migrate tbktdlieu");
         }
+
     }
 
     public TbktdLieuNew putMgrTimeoutCache(TbktdLieuNew tbktdLieuNew) {
@@ -124,7 +124,9 @@ public class RunnerService implements ApplicationRunner {
 
     void loopSave(List<TbktdLieuMgr> queryResult, int[] increment, SaveType saveType) {
         List<TbktdLieuNew> migratedList = queryResult.stream().map(mgr -> {
-            TbktdLieuNew tmp = builder(mgr, increment[0] % NANOS_WITHIN_A_DAY, ChronoUnit.MILLIS);
+            TbktdLieuNew tmp = builder(
+                    mgr, increment[0] % TimeMarkConstant.NANOS_WITHIN_A_DAY, ChronoUnit.MILLIS
+            );
             increment[0]++;
             return tmp;
         }).collect(Collectors.toList());
