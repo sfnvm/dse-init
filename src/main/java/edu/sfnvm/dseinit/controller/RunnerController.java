@@ -33,7 +33,7 @@ public class RunnerController {
 
     @GetMapping("caches/retry")
     public ResponseEntity<Response> retryCaches() {
-        retryService.retryCached(SaveType.ASYNC);
+        retryService.retryCached(SaveType.PREPARED);
         return ResponseEntity.ok(Response.builder().status("Running").build());
     }
 
@@ -77,13 +77,6 @@ public class RunnerController {
     public ResponseEntity<Void> clearStateTimeoutCache() {
         runnerService.clearStateTimeoutCache();
         return ResponseEntity.ok().build();
-    }
-
-    @Data
-    @Builder
-    public static class PairDto {
-        private String value0;
-        private Integer value1;
     }
 
     @Data

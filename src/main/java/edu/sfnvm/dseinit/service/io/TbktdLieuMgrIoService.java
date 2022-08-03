@@ -39,15 +39,10 @@ public class TbktdLieuMgrIoService {
         this.stateTimeoutCache = stateTimeoutCache;
     }
 
-    @Retryable(
-            maxAttempts = 5,
-            backoff = @Backoff(delay = 10000, multiplier = 2),
-            value = {Exception.class}
-    )
     public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
             String queryStr, String pagingState, int size, int increment) {
         try {
-            return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
+            return findWithoutSolrPaging(queryStr, pagingState, size);
         } catch (Exception e) {
             stateTimeoutCache.cache(StateTimeoutDto.builder()
                     .query(queryStr)
@@ -57,6 +52,16 @@ public class TbktdLieuMgrIoService {
                     .build());
             throw e;
         }
+    }
+
+    // @Retryable(
+    // 		maxAttempts = 5,
+    // 		backoff = @Backoff(delay = 10000, multiplier = 2),
+    // 		value = {Exception.class}
+    // )
+    public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
+            String queryStr, String pagingState, int size) {
+        return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
     }
 
     public TbktdLieuMgr findByPartitionKeys(String mst, Instant ntao, UUID id)

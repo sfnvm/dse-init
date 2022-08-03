@@ -45,9 +45,13 @@ public class RunnerService implements ApplicationRunner {
     private final StateTimeoutCache stateTimeoutCache;
 
     private static final String SELECT_TBKTDL_BY_PARTITION =
-            "SELECT * FROM ks_hoadon.hddt_tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
+            // "SELECT * FROM ks_hoadon.hddt_tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
+            "SELECT * FROM ks_hoadon.tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
 
     private final TbktdLieuNewMapper mapper = Mappers.getMapper(TbktdLieuNewMapper.class);
+
+    private static final boolean RUNNER = false;
+    private static final String CASE = "INSERT_TARGET";
 
     @Autowired
     public RunnerService(
@@ -63,28 +67,29 @@ public class RunnerService implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        List<Pair<String, Instant>> conditions = Arrays.stream(Resources.toString(
-                        Objects.requireNonNull(getClass().getResource("/static/conditions")),
-                        StandardCharsets.UTF_8).split("\n"))
-                .filter(s -> StringUtils.hasLength(s) && !s.startsWith("#"))
-                .map(s -> {
-                    String[] split = s.split(";");
-                    return new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1]));
-                }).collect(Collectors.toList());
+        if (RUNNER) {
+            List<Pair<String, Instant>> conditions = Arrays.stream(Resources.toString(
+                            Objects.requireNonNull(getClass().getResource("/static/conditions")),
+                            StandardCharsets.UTF_8).split("\n"))
+                    .filter(s -> StringUtils.hasLength(s) && !s.startsWith("#"))
+                    .map(s -> {
+                        String[] split = s.split(";");
+                        return new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1]));
+                    }).collect(Collectors.toList());
 
-        if (!CollectionUtils.isEmpty(conditions)) {
-            Instant start = Instant.now();
-            log.info("Mannual audit data started at: {}", start);
-            conditions.forEach(c -> {
-                String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
-                log.info("=== Start with query: {}", query);
-                migrate(query, SaveType.PREPARED);
-            });
-            log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
-        } else {
-            log.info("Condition list empty, skip migrate tbktdlieu");
+            if (!CollectionUtils.isEmpty(conditions)) {
+                Instant start = Instant.now();
+                log.info("Mannual audit data started at: {}", start);
+                conditions.forEach(c -> {
+                    String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
+                    log.info("=== Start with query: {}", query);
+                    migrate(query, SaveType.PREPARED);
+                });
+                log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
+            } else {
+                log.info("Condition list empty, skip migrate tbktdlieu");
+            }
         }
-
     }
 
     public TbktdLieuNew putMgrTimeoutCache(TbktdLieuNew tbktdLieuNew) {

@@ -3,6 +3,8 @@ package edu.sfnvm.dseinit.repository.provider;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.datastax.oss.driver.api.mapper.MapperContext;
+import com.datastax.oss.driver.api.mapper.annotations.CqlName;
+import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
@@ -86,10 +88,15 @@ public class SliceProvider<T> {
 
     @SuppressWarnings("Duplicates")
     public PagingData<T> findWithoutSolrPaging(String queryStr, String pagingState, int size) {
+        String keyspaceName = entityHelper.getEntityClass().getAnnotation(Entity.class).defaultKeyspace();
+        String tableName = entityHelper.getEntityClass().getAnnotation(CqlName.class).value();
+        if (!StringUtils.hasLength(queryStr)) {
+            queryStr = String.format("SELECT * FROM %s.%s", keyspaceName, tableName);
+        }
+
         SimpleStatementBuilder statementBuilder = SimpleStatement
                 .builder(queryStr)
                 .setPageSize(size);
-
         if (StringUtils.hasText(pagingState)) {
             statementBuilder.setPagingState(PagingState.fromString(pagingState).getRawPagingState());
         }

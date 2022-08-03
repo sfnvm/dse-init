@@ -38,37 +38,24 @@ public class TbktdLieuNewProvider {
                 throw new RuntimeException(e);
             }
         }
-
-        // ScheduledExecutorService threadpool = Executors.newScheduledThreadPool(100);
-        // items.parallelStream().forEach(item ->
-        // 		threadpool.scheduleAtFixedRate(() -> {
-        // 			BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
-        // 			entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
-        // 			log.info(item.getId().toString());
-        // 			try {
-        // 				session.execute(boundStatementBuilder.build());
-        // 			} catch (AllNodesFailedException | QueryExecutionException | QueryValidationException e) {
-        // 				throw new RuntimeException(e);
-        // 			}
-        // 		}, 50, 50, TimeUnit.MILLISECONDS));
-        //
-        // threadpool.shutdown();
     }
 
     @SuppressWarnings("Duplicates")
     public List<TbktdLieuNew> saveListReturnFailed(List<TbktdLieuNew> items) {
         List<TbktdLieuNew> failed = new ArrayList<>();
 
-        PreparedStatement saveStatement = session.prepare(entityHelper.insert().build());
-
         for (TbktdLieuNew item : items) {
-            BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
-            entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
             try {
+                PreparedStatement saveStatement = session.prepare(entityHelper.insert().build());
+                BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
+                entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
                 session.execute(boundStatementBuilder.build());
             } catch (AllNodesFailedException | QueryExecutionException | QueryValidationException e) {
+                log.error("Connection error for insert entity {}", item, e);
                 failed.add(item);
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                log.error("Timeout or unhandled error for insert entity {}", item, e);
+                failed.add(item);
             }
         }
 
