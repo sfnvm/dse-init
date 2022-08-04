@@ -1,5 +1,7 @@
 package edu.sfnvm.dseinit.service;
 
+import com.datastax.oss.driver.api.mapper.annotations.CqlName;
+import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.google.common.io.Resources;
 import edu.sfnvm.dseinit.constant.TimeMarkConstant;
 import edu.sfnvm.dseinit.dto.PagingData;
@@ -34,6 +36,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class RunnerService implements ApplicationRunner {
+    private static final String PREPEND_TARGET_QUERY = String.format(
+            "SELECT * FROM %s.%s ",
+            TbktdLieuMgr.class.getAnnotation(Entity.class).defaultKeyspace(),
+            TbktdLieuMgr.class.getAnnotation(CqlName.class).value());
+    private static final String SELECT_TBKTDL_BY_PARTITION =
+            PREPEND_TARGET_QUERY + "WHERE mst = '%s' AND ntao = '%s'";
+
     /**
      * <h2>IO Services</h2>
      */
@@ -42,11 +51,6 @@ public class RunnerService implements ApplicationRunner {
 
     @Value("${scan.path:}")
     private String scanPath;
-
-
-    private static final String SELECT_TBKTDL_BY_PARTITION =
-            // "SELECT * FROM ks_hoadon.hddt_tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
-            "SELECT * FROM ks_hoadon.tbktdl_mgr WHERE mst = '%s' AND ntao = '%s'";
 
     private final TbktdLieuNewMapper mapper = Mappers.getMapper(TbktdLieuNewMapper.class);
 
@@ -60,6 +64,8 @@ public class RunnerService implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        log.info(SELECT_TBKTDL_BY_PARTITION);
+
         URL path = StringUtils.hasLength(scanPath)
                 ? new URL(scanPath)
                 : getClass().getResource("/static/conditions");
