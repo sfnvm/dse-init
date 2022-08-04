@@ -1,22 +1,30 @@
 package edu.sfnvm.dseinit.service.io;
 
 import edu.sfnvm.dseinit.cache.TargetInsertTimeoutCache;
+import edu.sfnvm.dseinit.constant.TimeMarkConstant;
 import edu.sfnvm.dseinit.dto.enums.SaveType;
+import edu.sfnvm.dseinit.mapper.TbktdLieuNewMapper;
+import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.model.TbktdLieuNew;
 import edu.sfnvm.dseinit.repository.inventory.InventoryMapper;
 import edu.sfnvm.dseinit.repository.mapper.TbktdLieuNewRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class TbktdLieuNewIoService {
     private final TbktdLieuNewRepository tbktDLieuNewRepository;
     private final TargetInsertTimeoutCache targetInsertTimeoutCache;
+
+    private final TbktdLieuNewMapper mapper = Mappers.getMapper(TbktdLieuNewMapper.class);
 
     @Autowired
     public TbktdLieuNewIoService(
@@ -94,5 +102,35 @@ public class TbktdLieuNewIoService {
             default:
                 log.error("Type not supported");
         }
+    }
+
+    public void loopSave(List<TbktdLieuMgr> queryResult, int[] increment, SaveType saveType) {
+        List<TbktdLieuNew> migratedList = queryResult.stream().map(mgr -> {
+            TbktdLieuNew tmp = builder(
+                    mgr, increment[0] % TimeMarkConstant.NANOS_WITHIN_A_DAY, ChronoUnit.MILLIS
+            );
+            increment[0]++;
+            return tmp;
+        }).collect(Collectors.toList());
+
+        switch (saveType) {
+            case ASYNC: {
+                migratedList.forEach(this::saveAsync);
+                break;
+            }
+            case PREPARED: {
+                saveList(migratedList);
+                break;
+            }
+            default:
+                log.error("Save strategy not supported");
+        }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private TbktdLieuNew builder(TbktdLieuMgr sourceData, long incrementValue, ChronoUnit unitType) {
+        TbktdLieuNew result = mapper.map(sourceData);
+        result.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
+        return result;
     }
 }

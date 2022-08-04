@@ -3,18 +3,14 @@ package edu.sfnvm.dseinit.service;
 import com.datastax.oss.driver.api.mapper.annotations.CqlName;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.google.common.io.Resources;
-import edu.sfnvm.dseinit.constant.TimeMarkConstant;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.dto.enums.SaveType;
-import edu.sfnvm.dseinit.mapper.TbktdLieuNewMapper;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
-import edu.sfnvm.dseinit.model.TbktdLieuNew;
 import edu.sfnvm.dseinit.service.io.TbktdLieuMgrIoService;
 import edu.sfnvm.dseinit.service.io.TbktdLieuNewIoService;
 import edu.sfnvm.dseinit.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.javatuples.Pair;
-import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
@@ -27,7 +23,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -49,17 +44,19 @@ public class RunnerService implements ApplicationRunner {
     private final TbktdLieuMgrIoService tbktdLieuMgrIoService;
     private final TbktdLieuNewIoService tbktdLieuNewIoService;
 
+    private final RetryService retryService;
+
     @Value("${scan.path:}")
     private String scanPath;
-
-    private final TbktdLieuNewMapper mapper = Mappers.getMapper(TbktdLieuNewMapper.class);
 
     @Autowired
     public RunnerService(
             TbktdLieuMgrIoService tbktdLieuMgrIoService,
-            TbktdLieuNewIoService tbktdLieuNewIoService) {
+            TbktdLieuNewIoService tbktdLieuNewIoService,
+            RetryService retryService) {
         this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
         this.tbktdLieuNewIoService = tbktdLieuNewIoService;
+        this.retryService = retryService;
     }
 
     @Override
@@ -79,7 +76,7 @@ public class RunnerService implements ApplicationRunner {
                     return new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1]));
                 }).collect(Collectors.toList());
 
-        if (!CollectionUtils.isEmpty(conditions)) {
+        if (CollectionUtils.isEmpty(conditions)) {
             log.info("Condition list empty, skip migrate tbktdlieu");
             return;
         }
@@ -93,6 +90,9 @@ public class RunnerService implements ApplicationRunner {
             migrate(query, SaveType.PREPARED);
         });
 
+        log.info("Start auto retry once last time");
+        retryService.retryCached(SaveType.PREPARED);
+
         log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
     }
 
@@ -102,45 +102,15 @@ public class RunnerService implements ApplicationRunner {
         PagingData<TbktdLieuMgr> queryResult = tbktdLieuMgrIoService
                 .findWithoutSolrPaging(query, null, 1000, increment[0]);
         while (queryResult.getState() != null) {
-            loopSave(queryResult.getData(), increment, saveType);
+            tbktdLieuNewIoService.loopSave(queryResult.getData(), increment, saveType);
             queryResult = tbktdLieuMgrIoService
                     .findWithoutSolrPaging(query, queryResult.getState(), 1000, increment[0]);
             log.info("Complete migrate data with state: {}", queryResult.getState());
             log.info("Current increment: {}", increment[0]);
         }
         // Last page
-        loopSave(queryResult.getData(), increment, saveType);
+        tbktdLieuNewIoService.loopSave(queryResult.getData(), increment, saveType);
         log.info("Complete migrate data with state: {}", queryResult.getState());
         log.info("Current increment: {}", increment[0]);
-    }
-
-    void loopSave(List<TbktdLieuMgr> queryResult, int[] increment, SaveType saveType) {
-        List<TbktdLieuNew> migratedList = queryResult.stream().map(mgr -> {
-            TbktdLieuNew tmp = builder(
-                    mgr, increment[0] % TimeMarkConstant.NANOS_WITHIN_A_DAY, ChronoUnit.MILLIS
-            );
-            increment[0]++;
-            return tmp;
-        }).collect(Collectors.toList());
-
-        switch (saveType) {
-            case ASYNC: {
-                migratedList.forEach(tbktdLieuNewIoService::saveAsync);
-                break;
-            }
-            case PREPARED: {
-                tbktdLieuNewIoService.saveList(migratedList);
-                break;
-            }
-            default:
-                log.error("Save strategy not supported");
-        }
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private TbktdLieuNew builder(TbktdLieuMgr sourceData, long incrementValue, ChronoUnit unitType) {
-        TbktdLieuNew result = mapper.map(sourceData);
-        result.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
-        return result;
     }
 }
