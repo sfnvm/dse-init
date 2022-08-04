@@ -2,6 +2,8 @@ package edu.sfnvm.dseinit.service.io;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import edu.sfnvm.dseinit.cache.CacheConstants;
+import edu.sfnvm.dseinit.cache.MgrTimeoutCache;
+import edu.sfnvm.dseinit.cache.StateTimeoutCache;
 import edu.sfnvm.dseinit.dto.StateTimeoutDto;
 import edu.sfnvm.dseinit.model.TbktdLieuNew;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +20,17 @@ import java.util.stream.Collectors;
 @Service
 public class CacheIoService {
     private final CacheManager cacheManager;
+    private final MgrTimeoutCache mgrTimeoutCache;
+    private final StateTimeoutCache stateTimeoutCache;
 
     @Autowired
-    public CacheIoService(CacheManager cacheManager) {
+    public CacheIoService(
+            CacheManager cacheManager,
+            MgrTimeoutCache mgrTimeoutCache,
+            StateTimeoutCache stateTimeoutCache) {
         this.cacheManager = cacheManager;
+        this.mgrTimeoutCache = mgrTimeoutCache;
+        this.stateTimeoutCache = stateTimeoutCache;
     }
 
     public List<TbktdLieuNew> getMgrTimeoutCache() {
@@ -57,5 +66,22 @@ public class CacheIoService {
         } else {
             return caffeineCache.getNativeCache();
         }
+    }
+
+    public TbktdLieuNew putMgrTimeoutCache(TbktdLieuNew tbktdLieuNew) {
+        return mgrTimeoutCache.cache(tbktdLieuNew);
+    }
+
+    public StateTimeoutDto putStateTimeoutCache(StateTimeoutDto stateTimeoutDto) {
+        stateTimeoutCache.cache(stateTimeoutDto);
+        return stateTimeoutCache.cache(stateTimeoutDto);
+    }
+
+    public void clearMgrTimeoutCache() {
+        mgrTimeoutCache.clearCache();
+    }
+
+    public void clearStateTimeoutCache() {
+        stateTimeoutCache.clearCache();
     }
 }

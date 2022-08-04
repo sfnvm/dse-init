@@ -16,3 +16,5 @@ spring:
       password: teca@12#
 server:
   port: 8081
+scan:
+  path: file:/home/sfnvm/Downloads/test
