@@ -1,7 +1,7 @@
 package edu.sfnvm.dseinit.service;
 
-import edu.sfnvm.dseinit.cache.MgrTimeoutCache;
-import edu.sfnvm.dseinit.cache.StateTimeoutCache;
+import edu.sfnvm.dseinit.cache.TargetInsertTimeoutCache;
+import edu.sfnvm.dseinit.cache.SourceStateTimeoutCache;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.dto.StateTimeoutDto;
 import edu.sfnvm.dseinit.dto.enums.SaveType;
@@ -23,8 +23,8 @@ public class RetryService {
     private final CacheIoService cacheIoService;
     private final TbktdLieuNewIoService tbktDLieuNewIoService;
     private final TbktdLieuMgrIoService tbktDLieuMgrIoService;
-    private final MgrTimeoutCache mgrTimeoutCache;
-    private final StateTimeoutCache stateTimeoutCache;
+    private final TargetInsertTimeoutCache targetInsertTimeoutCache;
+    private final SourceStateTimeoutCache sourceStateTimeoutCache;
     private final RunnerService runnerService;
 
     @Autowired
@@ -32,14 +32,14 @@ public class RetryService {
             CacheIoService cacheIoService,
             TbktdLieuNewIoService tbktDLieuNewIoService,
             TbktdLieuMgrIoService tbktDLieuMgrIoService,
-            MgrTimeoutCache mgrTimeoutCache,
-            StateTimeoutCache stateTimeoutCache,
+            TargetInsertTimeoutCache targetInsertTimeoutCache,
+            SourceStateTimeoutCache sourceStateTimeoutCache,
             RunnerService runnerService) {
         this.cacheIoService = cacheIoService;
         this.tbktDLieuNewIoService = tbktDLieuNewIoService;
         this.tbktDLieuMgrIoService = tbktDLieuMgrIoService;
-        this.mgrTimeoutCache = mgrTimeoutCache;
-        this.stateTimeoutCache = stateTimeoutCache;
+        this.targetInsertTimeoutCache = targetInsertTimeoutCache;
+        this.sourceStateTimeoutCache = sourceStateTimeoutCache;
         this.runnerService = runnerService;
     }
 
@@ -61,7 +61,7 @@ public class RetryService {
 
     private void retryMgr(SaveType saveType) {
         List<TbktdLieuNew> toRetry = cacheIoService.getMgrTimeoutCache();
-        mgrTimeoutCache.clearCache();
+        targetInsertTimeoutCache.clearCache();
         switch (saveType) {
             case SIMPLE: {
                 for (TbktdLieuNew tbktdLieuNew : toRetry) {
@@ -86,7 +86,7 @@ public class RetryService {
 
     private void retryState(SaveType saveType) {
         List<StateTimeoutDto> stateToRetry = cacheIoService.getStateTimeoutCache();
-        stateTimeoutCache.clearCache();
+        sourceStateTimeoutCache.clearCache();
         for (StateTimeoutDto dto : stateToRetry) {
             PagingData<TbktdLieuMgr> queryResult = tbktDLieuMgrIoService.findWithoutSolrPaging(
                     dto.getQuery(),

@@ -3,7 +3,7 @@ package edu.sfnvm.dseinit.service.io;
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import edu.sfnvm.dseinit.cache.StateTimeoutCache;
+import edu.sfnvm.dseinit.cache.SourceStateTimeoutCache;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.dto.StateTimeoutDto;
 import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
@@ -13,8 +13,6 @@ import edu.sfnvm.dseinit.repository.mapper.TbktdLieuMgrRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.javatuples.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -29,14 +27,14 @@ import java.util.stream.Collectors;
 @Service
 public class TbktdLieuMgrIoService {
     private final TbktdLieuMgrRepository tbktDLieuMgrRepository;
-    private final StateTimeoutCache stateTimeoutCache;
+    private final SourceStateTimeoutCache sourceStateTimeoutCache;
 
     @Autowired
     public TbktdLieuMgrIoService(
             InventoryMapper inventoryMapper,
-            StateTimeoutCache stateTimeoutCache) {
+            SourceStateTimeoutCache sourceStateTimeoutCache) {
         this.tbktDLieuMgrRepository = inventoryMapper.tbktDLieuMgrRepository();
-        this.stateTimeoutCache = stateTimeoutCache;
+        this.sourceStateTimeoutCache = sourceStateTimeoutCache;
     }
 
     public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
@@ -44,7 +42,7 @@ public class TbktdLieuMgrIoService {
         try {
             return findWithoutSolrPaging(queryStr, pagingState, size);
         } catch (Exception e) {
-            stateTimeoutCache.cache(StateTimeoutDto.builder()
+            sourceStateTimeoutCache.cache(StateTimeoutDto.builder()
                     .query(queryStr)
                     .state(pagingState)
                     .increment(increment)

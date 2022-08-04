@@ -1,6 +1,6 @@
 package edu.sfnvm.dseinit.service.io;
 
-import edu.sfnvm.dseinit.cache.MgrTimeoutCache;
+import edu.sfnvm.dseinit.cache.TargetInsertTimeoutCache;
 import edu.sfnvm.dseinit.dto.enums.SaveType;
 import edu.sfnvm.dseinit.model.TbktdLieuNew;
 import edu.sfnvm.dseinit.repository.inventory.InventoryMapper;
@@ -16,14 +16,14 @@ import java.util.List;
 @Service
 public class TbktdLieuNewIoService {
     private final TbktdLieuNewRepository tbktDLieuNewRepository;
-    private final MgrTimeoutCache mgrTimeoutCache;
+    private final TargetInsertTimeoutCache targetInsertTimeoutCache;
 
     @Autowired
     public TbktdLieuNewIoService(
             InventoryMapper inventoryMapper,
-            MgrTimeoutCache mgrTimeoutCache) {
+            TargetInsertTimeoutCache targetInsertTimeoutCache) {
         this.tbktDLieuNewRepository = inventoryMapper.tbktDLieuNewRepository();
-        this.mgrTimeoutCache = mgrTimeoutCache;
+        this.targetInsertTimeoutCache = targetInsertTimeoutCache;
     }
 
     /**
@@ -40,7 +40,7 @@ public class TbktdLieuNewIoService {
         tbktDLieuNewRepository.saveAsync(entity).whenComplete((unused, ex) -> {
             if (ex != null) {
                 log.error("Connot save entity {}", entity, ex);
-                mgrTimeoutCache.cache(entity);
+                targetInsertTimeoutCache.cache(entity);
             }
         });
     }
@@ -72,7 +72,7 @@ public class TbktdLieuNewIoService {
     public void saveList(List<TbktdLieuNew> entityList) {
         List<TbktdLieuNew> failed = tbktDLieuNewRepository.saveListReturnFailed(entityList);
         if (!CollectionUtils.isEmpty(failed)) {
-            failed.forEach(mgrTimeoutCache::cache);
+            failed.forEach(targetInsertTimeoutCache::cache);
         }
     }
 

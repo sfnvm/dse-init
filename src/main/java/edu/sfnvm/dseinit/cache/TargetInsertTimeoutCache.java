@@ -8,15 +8,15 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class MgrTimeoutCache {
-    @Cacheable(value = CacheConstants.RETRY, sync = true)
+public class TargetInsertTimeoutCache {
+    @Cacheable(value = CacheConstants.TARGET_INSERT, sync = true)
     public TbktdLieuNew cache(TbktdLieuNew entity) {
-        // log.info("Cache miss {} for value: {}", CacheConstants.RETRY, entity);
+        log.info("Cache miss {} for value: {}", CacheConstants.TARGET_INSERT, entity);
         return entity;
     }
 
-    @CacheEvict(value = CacheConstants.RETRY, allEntries = true)
+    @CacheEvict(value = CacheConstants.TARGET_INSERT, allEntries = true)
     public void clearCache() {
-        log.info("Clear all cache: {}", CacheConstants.RETRY);
+        log.info("Clear all cache: {}", CacheConstants.TARGET_INSERT);
     }
 }
