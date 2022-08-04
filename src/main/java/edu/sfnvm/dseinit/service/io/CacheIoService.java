@@ -1,7 +1,7 @@
 package edu.sfnvm.dseinit.service.io;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import edu.sfnvm.dseinit.cache.CacheConstants;
+import edu.sfnvm.dseinit.constant.CacheConstants;
 import edu.sfnvm.dseinit.cache.TargetInsertTimeoutCache;
 import edu.sfnvm.dseinit.cache.SourceStateTimeoutCache;
 import edu.sfnvm.dseinit.dto.StateTimeoutDto;
@@ -34,7 +34,7 @@ public class CacheIoService {
     }
 
     public List<TbktdLieuNew> getMgrTimeoutCache() {
-        Cache<Object, Object> nativeCache = getCache(CacheConstants.TARGET_INSERT);
+        Cache<Object, Object> nativeCache = getCache(CacheConstants.TARGET_SAVE);
         if (nativeCache == null) {
             return new ArrayList<>();
         }

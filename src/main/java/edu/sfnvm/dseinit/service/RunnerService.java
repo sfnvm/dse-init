@@ -64,8 +64,6 @@ public class RunnerService implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        log.info(SELECT_TBKTDL_BY_PARTITION);
-
         URL path = StringUtils.hasLength(scanPath)
                 ? new URL(scanPath)
                 : getClass().getResource("/static/conditions");
@@ -82,17 +80,20 @@ public class RunnerService implements ApplicationRunner {
                 }).collect(Collectors.toList());
 
         if (!CollectionUtils.isEmpty(conditions)) {
-            Instant start = Instant.now();
-            log.info("Mannual audit data started at: {}", start);
-            conditions.forEach(c -> {
-                String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
-                log.info("=== Start with query: {}", query);
-                migrate(query, SaveType.PREPARED);
-            });
-            log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
-        } else {
             log.info("Condition list empty, skip migrate tbktdlieu");
+            return;
         }
+
+        Instant start = Instant.now();
+        log.info("Mannual audit data started at: {}", start);
+
+        conditions.forEach(c -> {
+            String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
+            log.info("=== Start with query: {}", query);
+            migrate(query, SaveType.PREPARED);
+        });
+
+        log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -137,10 +138,7 @@ public class RunnerService implements ApplicationRunner {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private TbktdLieuNew builder(
-            TbktdLieuMgr sourceData,
-            long incrementValue,
-            ChronoUnit unitType) {
+    private TbktdLieuNew builder(TbktdLieuMgr sourceData, long incrementValue, ChronoUnit unitType) {
         TbktdLieuNew result = mapper.map(sourceData);
         result.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
         return result;
