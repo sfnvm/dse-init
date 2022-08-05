@@ -6,10 +6,12 @@ import com.google.common.io.Resources;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.dto.enums.SaveType;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
+import edu.sfnvm.dseinit.service.io.CacheIoService;
 import edu.sfnvm.dseinit.service.io.TbktdLieuMgrIoService;
 import edu.sfnvm.dseinit.service.io.TbktdLieuNewIoService;
 import edu.sfnvm.dseinit.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
+import me.tongfei.progressbar.ProgressBar;
 import org.javatuples.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +28,9 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,18 +50,24 @@ public class RunnerService implements ApplicationRunner {
     private final TbktdLieuNewIoService tbktdLieuNewIoService;
 
     private final RetryService retryService;
+    private final CacheIoService cacheIoService;
 
     @Value("${scan.path:}")
     private String scanPath;
+
+    @Value("${retry.till.dead:false}")
+    private boolean retryTillDead;
 
     @Autowired
     public RunnerService(
             TbktdLieuMgrIoService tbktdLieuMgrIoService,
             TbktdLieuNewIoService tbktdLieuNewIoService,
-            RetryService retryService) {
+            RetryService retryService,
+            CacheIoService cacheIoService) {
         this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
         this.tbktdLieuNewIoService = tbktdLieuNewIoService;
         this.retryService = retryService;
+        this.cacheIoService = cacheIoService;
     }
 
     @Override
@@ -84,15 +95,24 @@ public class RunnerService implements ApplicationRunner {
         Instant start = Instant.now();
         log.info("Mannual audit data started at: {}", start);
 
-        conditions.forEach(c -> {
-            String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
-            log.info("=== Start with query: {}", query);
-            migrate(query, SaveType.PREPARED);
-        });
+        // Query with ProgressBar status
+        try (ProgressBar pb = new ProgressBar("Conditions Step", conditions.size())) {
+            conditions.forEach(c -> {
+                String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
+                log.info("=== Start with query: {}", query);
+                migrate(query, SaveType.PREPARED);
+                pb.step();
+            });
+        }
 
         log.info("Start auto retry once last time");
         retryService.retryCached(SaveType.PREPARED);
 
+        if (retryTillDead) {
+            retryTillDead();
+        }
+
+        // Mark done
         log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
     }
 
@@ -112,5 +132,17 @@ public class RunnerService implements ApplicationRunner {
         tbktdLieuNewIoService.loopSave(queryResult.getData(), increment, saveType);
         log.info("Complete migrate data with state: {}", queryResult.getState());
         log.info("Current increment: {}", increment[0]);
+    }
+
+    private void retryTillDead() {
+        log.info("Retry till dead !!!");
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        executor.scheduleAtFixedRate(() -> {
+            log.warn("'Retry till dead' status: Still trying");
+            while (!CollectionUtils.isEmpty(cacheIoService.getStateTimeoutCache())
+                    && !CollectionUtils.isEmpty(cacheIoService.getMgrTimeoutCache())) {
+                retryService.retryCached(SaveType.SIMPLE);
+            }
+        }, 0, 5000, TimeUnit.MILLISECONDS);
     }
 }

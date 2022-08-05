@@ -41,7 +41,7 @@ public class RetryService {
     }
 
     public void retryCached(SaveType saveType) {
-        // Retry failed
+        // Retry save failed
         if (CollectionUtils.isEmpty(cacheIoService.getMgrTimeoutCache())) {
             log.info("Mgr failure cache clean. Retry skipped");
         } else {

@@ -8,6 +8,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class DummyService {
     public void controllerAdvice() throws ResourceNotFoundException {
-        throw new ResourceNotFoundException("test");
+        throw new ResourceNotFoundException("ResourceNotFoundException");
     }
 }
