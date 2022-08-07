@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class DummyService {
-    public void controllerAdvice() throws ResourceNotFoundException {
-        throw new ResourceNotFoundException("ResourceNotFoundException");
-    }
+  public void controllerAdvice() throws ResourceNotFoundException {
+    throw new ResourceNotFoundException("ResourceNotFoundException");
+  }
 }

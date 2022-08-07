@@ -19,11 +19,11 @@ import java.util.UUID;
 @CqlName("dummy_kai")
 @ToString
 public class DummyKai {
-    @PartitionKey
-    private String someUniqueValue;
+  @PartitionKey
+  private String someUniqueValue;
 
-    @ClusteringColumn
-    private UUID timeUuid;
+  @ClusteringColumn
+  private UUID timeUuid;
 
-    private Instant createdTimestamp;
+  private Instant createdTimestamp;
 }

@@ -17,48 +17,48 @@ import java.util.List;
 
 @Slf4j
 public class TbktdLieuNewProvider {
-    private final CqlSession session;
-    private final EntityHelper<TbktdLieuNew> entityHelper;
+  private final CqlSession session;
+  private final EntityHelper<TbktdLieuNew> entityHelper;
 
-    public TbktdLieuNewProvider(MapperContext context, EntityHelper<TbktdLieuNew> entityHelper) {
-        this.session = context.getSession();
-        this.entityHelper = entityHelper;
+  public TbktdLieuNewProvider(MapperContext context, EntityHelper<TbktdLieuNew> entityHelper) {
+    this.session = context.getSession();
+    this.entityHelper = entityHelper;
+  }
+
+  @SuppressWarnings("Duplicates")
+  public void saveList(List<TbktdLieuNew> items) {
+    PreparedStatement saveStatement = session.prepare(entityHelper.insert().build());
+
+    for (TbktdLieuNew item : items) {
+      BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
+      entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
+      try {
+        session.execute(boundStatementBuilder.build());
+      } catch (AllNodesFailedException | QueryExecutionException | QueryValidationException e) {
+        throw new RuntimeException(e);
+      }
     }
+  }
 
-    @SuppressWarnings("Duplicates")
-    public void saveList(List<TbktdLieuNew> items) {
+  @SuppressWarnings("Duplicates")
+  public List<TbktdLieuNew> saveListReturnFailed(List<TbktdLieuNew> items) {
+    List<TbktdLieuNew> failed = new ArrayList<>();
+
+    for (TbktdLieuNew item : items) {
+      try {
         PreparedStatement saveStatement = session.prepare(entityHelper.insert().build());
-
-        for (TbktdLieuNew item : items) {
-            BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
-            entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
-            try {
-                session.execute(boundStatementBuilder.build());
-            } catch (AllNodesFailedException | QueryExecutionException | QueryValidationException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
+        entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
+        session.execute(boundStatementBuilder.build());
+      } catch (AllNodesFailedException | QueryExecutionException | QueryValidationException e) {
+        log.error("Connection error for insert entity {}", item, e);
+        failed.add(item);
+      } catch (Exception e) {
+        log.error("Timeout or unhandled error for insert entity {}", item, e);
+        failed.add(item);
+      }
     }
 
-    @SuppressWarnings("Duplicates")
-    public List<TbktdLieuNew> saveListReturnFailed(List<TbktdLieuNew> items) {
-        List<TbktdLieuNew> failed = new ArrayList<>();
-
-        for (TbktdLieuNew item : items) {
-            try {
-                PreparedStatement saveStatement = session.prepare(entityHelper.insert().build());
-                BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
-                entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
-                session.execute(boundStatementBuilder.build());
-            } catch (AllNodesFailedException | QueryExecutionException | QueryValidationException e) {
-                log.error("Connection error for insert entity {}", item, e);
-                failed.add(item);
-            } catch (Exception e) {
-                log.error("Timeout or unhandled error for insert entity {}", item, e);
-                failed.add(item);
-            }
-        }
-
-        return failed;
-    }
+    return failed;
+  }
 }

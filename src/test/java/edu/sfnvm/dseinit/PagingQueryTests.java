@@ -12,17 +12,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 @Slf4j
 @SpringBootTest
 public class PagingQueryTests {
-    private final TbktdLieuMgrIoService tbktdLieuMgrIoService;
+  private final TbktdLieuMgrIoService tbktdLieuMgrIoService;
 
-    @Autowired
-    public PagingQueryTests(TbktdLieuMgrIoService tbktdLieuMgrIoService) {
-        this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
-    }
+  @Autowired
+  public PagingQueryTests(TbktdLieuMgrIoService tbktdLieuMgrIoService) {
+    this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
+  }
 
-    @Test
-    void queryAll() {
-        PagingData<TbktdLieuMgr> queryRs = tbktdLieuMgrIoService.findWithoutSolrPaging(null, null, 1000);
-        log.info("PagingData size {}", queryRs.getData().size());
-        Assertions.assertNotEquals(0, queryRs.getData().size());
-    }
+  @Test
+  void queryAll() {
+    PagingData<TbktdLieuMgr> queryRs = tbktdLieuMgrIoService.findWithoutSolrPaging(null, null, 1000);
+    log.info("PagingData size {}", queryRs.getData().size());
+    Assertions.assertNotEquals(0, queryRs.getData().size());
+  }
 }

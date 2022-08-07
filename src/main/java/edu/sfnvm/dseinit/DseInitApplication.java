@@ -9,7 +9,7 @@ import org.springframework.retry.annotation.EnableRetry;
 @EnableRetry
 @EnableCaching
 public class DseInitApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(DseInitApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(DseInitApplication.class, args);
+  }
 }

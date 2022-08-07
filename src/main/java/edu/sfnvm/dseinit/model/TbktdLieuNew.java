@@ -26,50 +26,50 @@ import java.util.UUID;
 // @CqlName("hddt_tbktdl_target")
 @CqlName("tbktdl_target")
 public class TbktdLieuNew {
-    @PartitionKey(1)
-    private String mst;
+  @PartitionKey(1)
+  private String mst;
 
-    @PartitionKey(2)
-    private Instant ntao;
+  @PartitionKey(2)
+  private Instant ntao;
 
-    @ClusteringColumn
-    private UUID id;
+  @ClusteringColumn
+  private UUID id;
 
-    private String mso;
-    private String ddanh;
-    private String ten;
-    private String tnnt;
-    private Byte ltbao;
-    private THKTDLieu thop;
-    private String ccu;
-    private Instant nnhan;
-    private PTHDon ptgui;
-    private String tvandnkntt;
-    private String mtdtchieu;
-    private Integer sluong;
-    private String mcqt;
-    private String tcqt;
-    private List<UDTTBKTDLieu> ttctiet;
-    private Instant ncnhat;
-    private String pban;
-    private TTXLKTDLieu ttxly;
-    private String so;
-    private Instant ngay;
-    private Instant nky;
-    private String mlky;
-    private String tlky;
-    private String cks;
-    private UUID hsgoc;
-    private TTTBKTDLieu tttbao;
-    private Instant ngtbao;
-    private String mtdiep;
-    private String mlgtbao;
-    private String tlgtbao;
-    private List<UDTLoi> dsloi;
-    private String khhdon;
-    private Byte khmshdon;
-    private String mdvqhnsach;
-    private Integer shdon;
-    private Instant tdlap;
-    private String tlhdon;
+  private String mso;
+  private String ddanh;
+  private String ten;
+  private String tnnt;
+  private Byte ltbao;
+  private THKTDLieu thop;
+  private String ccu;
+  private Instant nnhan;
+  private PTHDon ptgui;
+  private String tvandnkntt;
+  private String mtdtchieu;
+  private Integer sluong;
+  private String mcqt;
+  private String tcqt;
+  private List<UDTTBKTDLieu> ttctiet;
+  private Instant ncnhat;
+  private String pban;
+  private TTXLKTDLieu ttxly;
+  private String so;
+  private Instant ngay;
+  private Instant nky;
+  private String mlky;
+  private String tlky;
+  private String cks;
+  private UUID hsgoc;
+  private TTTBKTDLieu tttbao;
+  private Instant ngtbao;
+  private String mtdiep;
+  private String mlgtbao;
+  private String tlgtbao;
+  private List<UDTLoi> dsloi;
+  private String khhdon;
+  private Byte khmshdon;
+  private String mdvqhnsach;
+  private Integer shdon;
+  private Instant tdlap;
+  private String tlhdon;
 }

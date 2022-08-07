@@ -7,9 +7,9 @@ import edu.sfnvm.dseinit.repository.mapper.TbktdLieuNewRepository;
 
 @Mapper
 public interface InventoryMapper {
-    @DaoFactory
-    TbktdLieuMgrRepository tbktDLieuMgrRepository();
+  @DaoFactory
+  TbktdLieuMgrRepository tbktDLieuMgrRepository();
 
-    @DaoFactory
-    TbktdLieuNewRepository tbktDLieuNewRepository();
+  @DaoFactory
+  TbktdLieuNewRepository tbktDLieuNewRepository();
 }

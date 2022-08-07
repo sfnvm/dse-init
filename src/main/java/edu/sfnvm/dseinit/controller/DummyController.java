@@ -11,16 +11,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("dummies")
 public class DummyController {
-    private final DummyService dummyService;
+  private final DummyService dummyService;
 
-    @Autowired
-    public DummyController(DummyService dummyService) {
-        this.dummyService = dummyService;
-    }
+  @Autowired
+  public DummyController(DummyService dummyService) {
+    this.dummyService = dummyService;
+  }
 
-    @GetMapping("controller-advice")
-    public ResponseEntity<?> controllerAdvice() throws ResourceNotFoundException {
-        dummyService.controllerAdvice();
-        return ResponseEntity.ok().build();
-    }
+  @GetMapping("controller-advice")
+  public ResponseEntity<?> controllerAdvice() throws ResourceNotFoundException {
+    dummyService.controllerAdvice();
+    return ResponseEntity.ok().build();
+  }
 }
