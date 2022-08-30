@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UDTLoi {
-  private String ma;
-  private String ten;
-  private String hdgquyet;
+    private String ma;
+    private String ten;
+    private String hdgquyet;
 }

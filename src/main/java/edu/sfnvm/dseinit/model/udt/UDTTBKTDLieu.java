@@ -20,18 +20,18 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UDTTBKTDLieu {
-  private Byte ltbao;
-  private Byte loai;
-  private Byte khmshdon;
-  private String khhdon;
-  private Integer shdon;
-  private Instant tdlap;
-  private String tnmua;
-  private String kdlieu;
-  private Byte ldau;
-  private Integer bslthu;
-  private Integer sbthdlieu;
-  private String mhhoa;
-  private String thhdvu;
-  private List<UDTLoi> dsloi;
+    private Byte ltbao;
+    private Byte loai;
+    private Byte khmshdon;
+    private String khhdon;
+    private Integer shdon;
+    private Instant tdlap;
+    private String tnmua;
+    private String kdlieu;
+    private Byte ldau;
+    private Integer bslthu;
+    private Integer sbthdlieu;
+    private String mhhoa;
+    private String thhdvu;
+    private List<UDTLoi> dsloi;
 }

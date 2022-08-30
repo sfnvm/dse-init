@@ -26,84 +26,84 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class TbktdLieuMgrIoService {
-  private final TbktdLieuMgrRepository tbktDLieuMgrRepository;
-  private final SourceStateTimeoutCache sourceStateTimeoutCache;
+    private final TbktdLieuMgrRepository tbktDLieuMgrRepository;
+    private final SourceStateTimeoutCache sourceStateTimeoutCache;
 
-  @Autowired
-  public TbktdLieuMgrIoService(
-    InventoryMapper inventoryMapper,
-    SourceStateTimeoutCache sourceStateTimeoutCache) {
-    this.tbktDLieuMgrRepository = inventoryMapper.tbktDLieuMgrRepository();
-    this.sourceStateTimeoutCache = sourceStateTimeoutCache;
-  }
-
-  public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
-    String queryStr, String pagingState, int size, int increment) {
-    try {
-      return findWithoutSolrPaging(queryStr, pagingState, size);
-    } catch (Exception e) {
-      sourceStateTimeoutCache.cache(StateTimeoutDto.builder()
-        .query(queryStr)
-        .state(pagingState)
-        .increment(increment)
-        .querySize(size)
-        .build());
-      throw e;
+    @Autowired
+    public TbktdLieuMgrIoService(
+        InventoryMapper inventoryMapper,
+        SourceStateTimeoutCache sourceStateTimeoutCache) {
+        this.tbktDLieuMgrRepository = inventoryMapper.tbktDLieuMgrRepository();
+        this.sourceStateTimeoutCache = sourceStateTimeoutCache;
     }
-  }
 
-  // @Retryable(
-  // 		maxAttempts = 5,
-  // 		backoff = @Backoff(delay = 10000, multiplier = 2),
-  // 		value = {Exception.class}
-  // )
-  public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
-    String queryStr, String pagingState, int size) {
-    return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
-  }
+    public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
+        String queryStr, String pagingState, int size, int increment) {
+        try {
+            return findWithoutSolrPaging(queryStr, pagingState, size);
+        } catch (Exception e) {
+            sourceStateTimeoutCache.cache(StateTimeoutDto.builder()
+                .query(queryStr)
+                .state(pagingState)
+                .increment(increment)
+                .querySize(size)
+                .build());
+            throw e;
+        }
+    }
 
-  public TbktdLieuMgr findByPartitionKeys(String mst, Instant ntao, UUID id)
-  throws ResourceNotFoundException {
-    return tbktDLieuMgrRepository
-      .findByPartitionKeys(mst, ntao, id)
-      .orElseThrow(() -> new ResourceNotFoundException("Resource not found: TbktdLieuMgr"));
-  }
+    // @Retryable(
+    // 		maxAttempts = 5,
+    // 		backoff = @Backoff(delay = 10000, multiplier = 2),
+    // 		value = {Exception.class}
+    // )
+    public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
+        String queryStr, String pagingState, int size) {
+        return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
+    }
 
-  public List<TbktdLieuMgr> findByPartitionKeys(String mst, Instant ntao) {
-    return tbktDLieuMgrRepository.findByPartitionKeys(mst, ntao).all();
-  }
+    public TbktdLieuMgr findByPartitionKeys(String mst, Instant ntao, UUID id)
+    throws ResourceNotFoundException {
+        return tbktDLieuMgrRepository
+            .findByPartitionKeys(mst, ntao, id)
+            .orElseThrow(() -> new ResourceNotFoundException("Resource not found: TbktdLieuMgr"));
+    }
 
-  public List<TbktdLieuMgr> findByPartitionKeys(List<Pair<String, Instant>> conditions) {
-    return conditions.parallelStream()
-      .flatMap(p -> findByPartitionKeys(p.getValue0(), p.getValue1()).stream())
-      .collect(Collectors.toList());
-  }
+    public List<TbktdLieuMgr> findByPartitionKeys(String mst, Instant ntao) {
+        return tbktDLieuMgrRepository.findByPartitionKeys(mst, ntao).all();
+    }
 
-  public Map<Pair<String, Instant>, List<TbktdLieuMgr>> findAndTransformByPartitionKeys(
-    List<Pair<String, Instant>> conditions) {
-    Map<Pair<String, Instant>, List<TbktdLieuMgr>> result = new HashMap<>();
-    conditions.forEach(p -> {
-      List<TbktdLieuMgr> tmpRs = findByPartitionKeys(p.getValue0(), p.getValue1());
-      if (!CollectionUtils.isEmpty(tmpRs)) {
-        result.putIfAbsent(p, tmpRs);
-      }
-    });
-    return result;
-  }
+    public List<TbktdLieuMgr> findByPartitionKeys(List<Pair<String, Instant>> conditions) {
+        return conditions.parallelStream()
+            .flatMap(p -> findByPartitionKeys(p.getValue0(), p.getValue1()).stream())
+            .collect(Collectors.toList());
+    }
 
-  public void saveAsync(TbktdLieuMgr entity) {
-    tbktDLieuMgrRepository.saveAsync(entity).whenComplete((unused, ex) -> {
-      if (ex != null) {
-        log.error("Connot save entity {}", entity, ex);
-      }
-    });
-  }
+    public Map<Pair<String, Instant>, List<TbktdLieuMgr>> findAndTransformByPartitionKeys(
+        List<Pair<String, Instant>> conditions) {
+        Map<Pair<String, Instant>, List<TbktdLieuMgr>> result = new HashMap<>();
+        conditions.forEach(p -> {
+            List<TbktdLieuMgr> tmpRs = findByPartitionKeys(p.getValue0(), p.getValue1());
+            if (!CollectionUtils.isEmpty(tmpRs)) {
+                result.putIfAbsent(p, tmpRs);
+            }
+        });
+        return result;
+    }
 
-  public BoundStatement boundStatementSave(TbktdLieuMgr entity) {
-    return tbktDLieuMgrRepository.boundStatementSave(entity);
-  }
+    public void saveAsync(TbktdLieuMgr entity) {
+        tbktDLieuMgrRepository.saveAsync(entity).whenComplete((unused, ex) -> {
+            if (ex != null) {
+                log.error("Connot save entity {}", entity, ex);
+            }
+        });
+    }
 
-  public void executeBatch(List<BatchableStatement<?>> batch, BatchType type, int size) {
-    tbktDLieuMgrRepository.executeBatch(batch, type, size);
-  }
+    public BoundStatement boundStatementSave(TbktdLieuMgr entity) {
+        return tbktDLieuMgrRepository.boundStatementSave(entity);
+    }
+
+    public void executeBatch(List<BatchableStatement<?>> batch, BatchType type, int size) {
+        tbktDLieuMgrRepository.executeBatch(batch, type, size);
+    }
 }

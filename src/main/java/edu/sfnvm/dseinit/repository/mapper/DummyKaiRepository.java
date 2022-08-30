@@ -11,18 +11,18 @@ import java.util.concurrent.CompletionStage;
 
 @Dao
 public interface DummyKaiRepository {
-  @Insert
-  void saveSync(DummyKai entity);
+    @Insert
+    void saveSync(DummyKai entity);
 
-  @Insert
-  CompletionStage<Void> saveAsync(DummyKai entity);
+    @Insert
+    CompletionStage<Void> saveAsync(DummyKai entity);
 
-  @Delete(entityClass = DummyKai.class)
-  void deleteByPartition(String pk);
+    @Delete(entityClass = DummyKai.class)
+    void deleteByPartition(String pk);
 
-  @Select(customWhereClause = "some_unique_value = :pk", orderBy = {"time_uuid ASC"})
-  PagingIterable<DummyKai> selectAscByTimeUuid(String pk);
+    @Select(customWhereClause = "some_unique_value = :pk", orderBy = {"time_uuid ASC"})
+    PagingIterable<DummyKai> selectAscByTimeUuid(String pk);
 
-  @Select(customWhereClause = "some_unique_value = :pk", orderBy = {"time_uuid DESC"})
-  PagingIterable<DummyKai> selectDescByTimeUuid(String pk);
+    @Select(customWhereClause = "some_unique_value = :pk", orderBy = {"time_uuid DESC"})
+    PagingIterable<DummyKai> selectDescByTimeUuid(String pk);
 }

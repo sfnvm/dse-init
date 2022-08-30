@@ -6,5 +6,5 @@ import org.mapstruct.Mapper;
 
 @Mapper
 public interface TbktdLieuNewMapper {
-  TbktdLieuNew map(TbktdLieuMgr tbktdLieuMgr);
+    TbktdLieuNew map(TbktdLieuMgr tbktdLieuMgr);
 }

@@ -10,14 +10,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class TargetInsertTimeoutCache {
-  @Cacheable(value = CacheConstants.TARGET_SAVE, sync = true)
-  public TbktdLieuNew cache(TbktdLieuNew entity) {
-    log.info("Cache miss {} for value: {}", CacheConstants.TARGET_SAVE, entity);
-    return entity;
-  }
+    @Cacheable(value = CacheConstants.TARGET_SAVE, sync = true)
+    public TbktdLieuNew cache(TbktdLieuNew entity) {
+        log.info("Cache miss {} for value: {}", CacheConstants.TARGET_SAVE, entity);
+        return entity;
+    }
 
-  @CacheEvict(value = CacheConstants.TARGET_SAVE, allEntries = true)
-  public void clearCache() {
-    log.info("Clear all cache: {}", CacheConstants.TARGET_SAVE);
-  }
+    @CacheEvict(value = CacheConstants.TARGET_SAVE, allEntries = true)
+    public void clearCache() {
+        log.info("Clear all cache: {}", CacheConstants.TARGET_SAVE);
+    }
 }

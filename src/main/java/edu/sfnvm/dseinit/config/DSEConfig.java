@@ -18,45 +18,45 @@ import java.util.stream.Collectors;
 
 @Service
 public class DSEConfig {
-  @Value("#{'${spring.data.cassandra.contact-points}'.split(',')}")
-  private List<String> hosts;
+    @Value("#{'${spring.data.cassandra.contact-points}'.split(',')}")
+    private List<String> hosts;
 
-  @Value("${spring.data.cassandra.local-datacenter}")
-  private String localDatacenter;
+    @Value("${spring.data.cassandra.local-datacenter}")
+    private String localDatacenter;
 
-  @Value("${spring.data.cassandra.username}")
-  private String username;
+    @Value("${spring.data.cassandra.username}")
+    private String username;
 
-  @Value("${spring.data.cassandra.password}")
-  private String password;
+    @Value("${spring.data.cassandra.password}")
+    private String password;
 
-  @Bean
-  public CqlSession cqlSession() {
-    List<InetSocketAddress> contactPoints = hosts.parallelStream()
-      .map(host -> host.split(":"))
-      .map(host -> new InetSocketAddress(host[0], Integer.parseInt(host[1])))
-      .collect(Collectors.toList());
+    @Bean
+    public CqlSession cqlSession() {
+        List<InetSocketAddress> contactPoints = hosts.parallelStream()
+            .map(host -> host.split(":"))
+            .map(host -> new InetSocketAddress(host[0], Integer.parseInt(host[1])))
+            .collect(Collectors.toList());
 
-    return CqlSession.builder()
-      .addContactPoints(contactPoints)
-      .withLocalDatacenter(localDatacenter)
-      .withAuthCredentials(username, password)
-      .addTypeCodecs(
-        new PTHDonCodec(),
-        new THKTDLieuCodec(),
-        new TTTBKTDLieuCodec(),
-        new TTXLKTDLieuCodec()
-      )
-      .build();
-  }
+        return CqlSession.builder()
+            .addContactPoints(contactPoints)
+            .withLocalDatacenter(localDatacenter)
+            .withAuthCredentials(username, password)
+            .addTypeCodecs(
+                new PTHDonCodec(),
+                new THKTDLieuCodec(),
+                new TTTBKTDLieuCodec(),
+                new TTXLKTDLieuCodec()
+            )
+            .build();
+    }
 
-  @Bean
-  public InventoryMapper inventoryMapper(@Autowired CqlSession cqlSession) {
-    return new InventoryMapperBuilder(cqlSession).build();
-  }
+    @Bean
+    public InventoryMapper inventoryMapper(@Autowired CqlSession cqlSession) {
+        return new InventoryMapperBuilder(cqlSession).build();
+    }
 
-  // @Bean
-  // public DummyInventoryMapper dummyInventoryMapper(@Autowired CqlSession cqlSession) {
-  // 	return new DummyInventoryMapperBuilder(cqlSession).build();
-  // }
+    // @Bean
+    // public DummyInventoryMapper dummyInventoryMapper(@Autowired CqlSession cqlSession) {
+    // 	return new DummyInventoryMapperBuilder(cqlSession).build();
+    // }
 }

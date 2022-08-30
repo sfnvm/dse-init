@@ -7,19 +7,19 @@ import edu.sfnvm.dseinit.model.enums.TTXLKTDLieu;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 public class TTXLKTDLieuCodec extends MappingCodec<Byte, TTXLKTDLieu> {
-  public TTXLKTDLieuCodec() {
-    super(TypeCodecs.TINYINT, GenericType.of(TTXLKTDLieu.class));
-  }
+    public TTXLKTDLieuCodec() {
+        super(TypeCodecs.TINYINT, GenericType.of(TTXLKTDLieu.class));
+    }
 
-  @Nullable
-  @Override
-  protected TTXLKTDLieu innerToOuter(@Nullable Byte value) {
-    return value == null ? null : TTXLKTDLieu.fromValue(value);
-  }
+    @Nullable
+    @Override
+    protected TTXLKTDLieu innerToOuter(@Nullable Byte value) {
+        return value == null ? null : TTXLKTDLieu.fromValue(value);
+    }
 
-  @Nullable
-  @Override
-  protected Byte outerToInner(@Nullable TTXLKTDLieu value) {
-    return value == null ? null : value.getValue();
-  }
+    @Nullable
+    @Override
+    protected Byte outerToInner(@Nullable TTXLKTDLieu value) {
+        return value == null ? null : value.getValue();
+    }
 }

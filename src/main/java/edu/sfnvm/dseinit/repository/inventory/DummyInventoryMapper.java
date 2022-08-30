@@ -6,6 +6,6 @@ import edu.sfnvm.dseinit.repository.mapper.DummyKaiRepository;
 
 @Mapper
 public interface DummyInventoryMapper {
-  @DaoFactory
-  DummyKaiRepository dummyKaiRepository();
+    @DaoFactory
+    DummyKaiRepository dummyKaiRepository();
 }
