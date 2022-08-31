@@ -54,9 +54,4 @@ public class DSEConfig {
     public InventoryMapper inventoryMapper(@Autowired CqlSession cqlSession) {
         return new InventoryMapperBuilder(cqlSession).build();
     }
-
-    // @Bean
-    // public DummyInventoryMapper dummyInventoryMapper(@Autowired CqlSession cqlSession) {
-    // 	return new DummyInventoryMapperBuilder(cqlSession).build();
-    // }
 }

@@ -2,7 +2,7 @@ package edu.sfnvm.dseinit.controller;
 
 import edu.sfnvm.dseinit.dto.StateTimeoutDto;
 import edu.sfnvm.dseinit.dto.enums.SaveType;
-import edu.sfnvm.dseinit.model.TbktdLieuNew;
+import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.service.RetryService;
 import edu.sfnvm.dseinit.service.io.CacheIoService;
 import lombok.Builder;
@@ -39,7 +39,7 @@ public class RunnerController {
      * <h2>Mgr</h2>
      */
     @GetMapping("caches/mgr")
-    public ResponseEntity<List<TbktdLieuNew>> getMgrTimeoutCache() {
+    public ResponseEntity<List<TbktdLieuMgr>> getMgrTimeoutCache() {
         return ResponseEntity.ok(cacheIoService.getMgrTimeoutCache());
     }
 

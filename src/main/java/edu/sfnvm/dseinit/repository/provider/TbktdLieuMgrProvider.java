@@ -9,27 +9,27 @@ import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
 import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.mapper.entity.saving.NullSavingStrategy;
-import edu.sfnvm.dseinit.model.TbktdLieuNew;
+import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class TbktdLieuNewProvider {
+public class TbktdLieuMgrProvider {
     private final CqlSession session;
-    private final EntityHelper<TbktdLieuNew> entityHelper;
+    private final EntityHelper<TbktdLieuMgr> entityHelper;
 
-    public TbktdLieuNewProvider(MapperContext context, EntityHelper<TbktdLieuNew> entityHelper) {
+    public TbktdLieuMgrProvider(MapperContext context, EntityHelper<TbktdLieuMgr> entityHelper) {
         this.session = context.getSession();
         this.entityHelper = entityHelper;
     }
 
     @SuppressWarnings("Duplicates")
-    public void saveList(List<TbktdLieuNew> items) {
+    public void saveList(List<TbktdLieuMgr> items) {
         PreparedStatement saveStatement = session.prepare(entityHelper.insert().build());
 
-        for (TbktdLieuNew item : items) {
+        for (TbktdLieuMgr item : items) {
             BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
             entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
             try {
@@ -41,10 +41,10 @@ public class TbktdLieuNewProvider {
     }
 
     @SuppressWarnings("Duplicates")
-    public List<TbktdLieuNew> saveListReturnFailed(List<TbktdLieuNew> items) {
-        List<TbktdLieuNew> failed = new ArrayList<>();
+    public List<TbktdLieuMgr> saveListReturnFailed(List<TbktdLieuMgr> items) {
+        List<TbktdLieuMgr> failed = new ArrayList<>();
 
-        for (TbktdLieuNew item : items) {
+        for (TbktdLieuMgr item : items) {
             try {
                 PreparedStatement saveStatement = session.prepare(entityHelper.insert().build());
                 BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();

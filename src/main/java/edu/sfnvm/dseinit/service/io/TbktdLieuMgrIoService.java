@@ -3,9 +3,12 @@ package edu.sfnvm.dseinit.service.io;
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import edu.sfnvm.dseinit.cache.SourceStateTimeoutCache;
+import edu.sfnvm.dseinit.cache.SaveTimeoutCache;
+import edu.sfnvm.dseinit.cache.StateTimeoutCache;
+import edu.sfnvm.dseinit.constant.TimeMarkConstant;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.dto.StateTimeoutDto;
+import edu.sfnvm.dseinit.dto.enums.SaveType;
 import edu.sfnvm.dseinit.exception.ResourceNotFoundException;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.repository.inventory.InventoryMapper;
@@ -17,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,14 +31,17 @@ import java.util.stream.Collectors;
 @Service
 public class TbktdLieuMgrIoService {
     private final TbktdLieuMgrRepository tbktDLieuMgrRepository;
-    private final SourceStateTimeoutCache sourceStateTimeoutCache;
+    private final StateTimeoutCache stateTimeoutCache;
+    private final SaveTimeoutCache saveTimeoutCache;
 
     @Autowired
     public TbktdLieuMgrIoService(
         InventoryMapper inventoryMapper,
-        SourceStateTimeoutCache sourceStateTimeoutCache) {
+        StateTimeoutCache stateTimeoutCache,
+        SaveTimeoutCache saveTimeoutCache) {
         this.tbktDLieuMgrRepository = inventoryMapper.tbktDLieuMgrRepository();
-        this.sourceStateTimeoutCache = sourceStateTimeoutCache;
+        this.stateTimeoutCache = stateTimeoutCache;
+        this.saveTimeoutCache = saveTimeoutCache;
     }
 
     public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
@@ -42,7 +49,7 @@ public class TbktdLieuMgrIoService {
         try {
             return findWithoutSolrPaging(queryStr, pagingState, size);
         } catch (Exception e) {
-            sourceStateTimeoutCache.cache(StateTimeoutDto.builder()
+            stateTimeoutCache.cache(StateTimeoutDto.builder()
                 .query(queryStr)
                 .state(pagingState)
                 .increment(increment)
@@ -52,11 +59,6 @@ public class TbktdLieuMgrIoService {
         }
     }
 
-    // @Retryable(
-    // 		maxAttempts = 5,
-    // 		backoff = @Backoff(delay = 10000, multiplier = 2),
-    // 		value = {Exception.class}
-    // )
     public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
         String queryStr, String pagingState, int size) {
         return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
@@ -91,19 +93,67 @@ public class TbktdLieuMgrIoService {
         return result;
     }
 
+    // ===== IO save =====
+
     public void saveAsync(TbktdLieuMgr entity) {
         tbktDLieuMgrRepository.saveAsync(entity).whenComplete((unused, ex) -> {
             if (ex != null) {
                 log.error("Connot save entity {}", entity, ex);
+                saveTimeoutCache.cache(entity);
             }
         });
+    }
+
+    public void save(TbktdLieuMgr entity) {
+        tbktDLieuMgrRepository.save(entity);
     }
 
     public BoundStatement boundStatementSave(TbktdLieuMgr entity) {
         return tbktDLieuMgrRepository.boundStatementSave(entity);
     }
 
+    // ===== Util save =====
+
+    public void saveList(List<TbktdLieuMgr> entityList) {
+        List<TbktdLieuMgr> failed = tbktDLieuMgrRepository.saveListReturnFailed(entityList);
+        if (!CollectionUtils.isEmpty(failed)) {
+            failed.forEach(saveTimeoutCache::cache);
+        }
+    }
+
     public void executeBatch(List<BatchableStatement<?>> batch, BatchType type, int size) {
         tbktDLieuMgrRepository.executeBatch(batch, type, size);
+    }
+
+    public void loopSave(List<TbktdLieuMgr> queryResult, int[] increment, SaveType saveType) {
+        List<TbktdLieuMgr> migratedList = queryResult.stream().map(mgr -> {
+            TbktdLieuMgr tmp = builder(
+                mgr, increment[0] % TimeMarkConstant.NANOS_WITHIN_A_DAY, ChronoUnit.MILLIS
+            );
+            increment[0]++;
+            return tmp;
+        }).collect(Collectors.toList());
+
+        switch (saveType) {
+            case ASYNC: {
+                migratedList.forEach(this::saveAsync);
+                break;
+            }
+            case PREPARED: {
+                saveList(migratedList);
+                break;
+            }
+            default:
+                log.error("Save strategy not supported");
+        }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private TbktdLieuMgr builder(
+        TbktdLieuMgr sourceData,
+        long incrementValue,
+        ChronoUnit unitType) {
+        sourceData.setNtao(sourceData.getNtao().plus(incrementValue, unitType));
+        return sourceData;
     }
 }

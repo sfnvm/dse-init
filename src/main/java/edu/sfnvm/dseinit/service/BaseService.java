@@ -67,7 +67,11 @@ public class BaseService {
      * <a href="https://solr.apache.org/guide/6_6/the-standard-query-parser.html">[REF2]</a>
      * <p>the-standard-query-parser</p>
      */
-    protected <T> SolrSearch solrQueryBuilder(String search, List<String> sorts, Query additionalQuery, Class<T> clazz) {
+    protected <T> SolrSearch solrQueryBuilder(
+        String search,
+        List<String> sorts,
+        Query additionalQuery,
+        Class<T> clazz) {
         if (search == null || search.isEmpty()) {
             search = "*==*";
         }
@@ -101,7 +105,8 @@ public class BaseService {
     throws ParseException {
         // Extract keyspace
         if (!clazz.isAnnotationPresent(Entity.class)) {
-            throw new ParseException("Cannot found @Entity annotation in model class " + clazz.getSimpleName());
+            throw new ParseException(
+                "Cannot found @Entity annotation in model class " + clazz.getSimpleName());
         }
 
         String keyspace = clazz.getAnnotation(Entity.class).defaultKeyspace();
@@ -133,8 +138,10 @@ public class BaseService {
         if (CollectionUtils.isEmpty(values)) return "";
 
         int maxClauseCount = 1024;
-        int totalEl = values.size(); // size of list
-        int shouldClauseNums = (int) Math.ceil(totalEl * 1.0 / maxClauseCount); // the number of should clause
+        // Size of list
+        int totalEl = values.size();
+        // The number of should clause
+        int shouldClauseNums = (int) Math.ceil(totalEl * 1.0 / maxClauseCount);
         List<String> shouldClauseList = new ArrayList<>(shouldClauseNums);
 
         for (int i = 0; i < shouldClauseNums; i++) {
@@ -151,5 +158,4 @@ public class BaseService {
 
         return newSearch;
     }
-
 }

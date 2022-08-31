@@ -8,7 +8,6 @@ import edu.sfnvm.dseinit.dto.enums.SaveType;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.service.io.CacheIoService;
 import edu.sfnvm.dseinit.service.io.TbktdLieuMgrIoService;
-import edu.sfnvm.dseinit.service.io.TbktdLieuNewIoService;
 import edu.sfnvm.dseinit.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import me.tongfei.progressbar.ProgressBar;
@@ -47,7 +46,6 @@ public class RunnerService implements ApplicationRunner {
      * <h2>IO Services</h2>
      */
     private final TbktdLieuMgrIoService tbktdLieuMgrIoService;
-    private final TbktdLieuNewIoService tbktdLieuNewIoService;
 
     private final RetryService retryService;
     private final CacheIoService cacheIoService;
@@ -61,11 +59,9 @@ public class RunnerService implements ApplicationRunner {
     @Autowired
     public RunnerService(
         TbktdLieuMgrIoService tbktdLieuMgrIoService,
-        TbktdLieuNewIoService tbktdLieuNewIoService,
         RetryService retryService,
         CacheIoService cacheIoService) {
         this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
-        this.tbktdLieuNewIoService = tbktdLieuNewIoService;
         this.retryService = retryService;
         this.cacheIoService = cacheIoService;
     }
@@ -82,10 +78,10 @@ public class RunnerService implements ApplicationRunner {
                 Objects.requireNonNull(path),
                 StandardCharsets.UTF_8).split("\n"))
             .filter(s -> StringUtils.hasLength(s) && !s.startsWith("#"))
-            .map(s -> {
-                String[] split = s.split(";");
-                return new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1]));
-            }).collect(Collectors.toList());
+            .map(s -> s.split(";"))
+            .filter(strings -> strings.length == 2)
+            .map(split -> new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1])))
+            .collect(Collectors.toList());
 
         if (CollectionUtils.isEmpty(conditions)) {
             log.info("Condition list empty, skip migrate tbktdlieu");
@@ -122,14 +118,14 @@ public class RunnerService implements ApplicationRunner {
         PagingData<TbktdLieuMgr> queryResult = tbktdLieuMgrIoService
             .findWithoutSolrPaging(query, null, 1000, increment[0]);
         while (queryResult.getState() != null) {
-            tbktdLieuNewIoService.loopSave(queryResult.getData(), increment, saveType);
+            tbktdLieuMgrIoService.loopSave(queryResult.getData(), increment, saveType);
             queryResult = tbktdLieuMgrIoService
                 .findWithoutSolrPaging(query, queryResult.getState(), 1000, increment[0]);
             log.info("Complete migrate data with state: {}", queryResult.getState());
             log.info("Current increment: {}", increment[0]);
         }
         // Last page
-        tbktdLieuNewIoService.loopSave(queryResult.getData(), increment, saveType);
+        tbktdLieuMgrIoService.loopSave(queryResult.getData(), increment, saveType);
         log.info("Complete migrate data with state: {}", queryResult.getState());
         log.info("Current increment: {}", increment[0]);
     }

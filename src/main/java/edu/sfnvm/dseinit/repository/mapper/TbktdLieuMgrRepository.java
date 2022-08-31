@@ -12,6 +12,7 @@ import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.repository.provider.CassandraBatchOpsProvider;
 import edu.sfnvm.dseinit.repository.provider.SliceProvider;
+import edu.sfnvm.dseinit.repository.provider.TbktdLieuMgrProvider;
 
 import java.time.Instant;
 import java.util.List;
@@ -28,10 +29,16 @@ public interface TbktdLieuMgrRepository {
     Optional<TbktdLieuMgr> findByPartitionKeys(String mst, Instant ntao, UUID id);
 
     @Insert
+    void save(TbktdLieuMgr entity);
+
+    @Insert
     CompletionStage<Void> saveAsync(TbktdLieuMgr tbktDLieuMgr);
 
     @Insert
     BoundStatement boundStatementSave(TbktdLieuMgr dsTvanKdtKquaCtiet);
+
+    @QueryProvider(providerClass = TbktdLieuMgrProvider.class, entityHelpers = TbktdLieuMgr.class)
+    List<TbktdLieuMgr> saveListReturnFailed(List<TbktdLieuMgr> items);
 
     @QueryProvider(providerClass = CassandraBatchOpsProvider.class)
     void executeBatch(List<BatchableStatement<?>> boundStatements, BatchType type, int size);
