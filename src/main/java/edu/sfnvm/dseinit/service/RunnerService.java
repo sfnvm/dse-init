@@ -137,9 +137,11 @@ public class RunnerService implements ApplicationRunner {
             && !CollectionUtils.isEmpty(cacheIoService.getMgrTimeoutCache())) {
             executor.scheduleAtFixedRate(() -> {
                 log.warn("'Retry till dead' status: Still trying");
-                log.warn("'Retry till dead' cacheIoService.getStateTimeoutCache().size(): {}",
+                log.warn(
+                    "'Retry till dead' cacheIoService.getStateTimeoutCache().size(): {}",
                     cacheIoService.getStateTimeoutCache().size());
-                log.warn("'Retry till dead' cacheIoService.getMgrTimeoutCache().size(): {}",
+                log.warn(
+                    "'Retry till dead' cacheIoService.getMgrTimeoutCache().size(): {}",
                     cacheIoService.getMgrTimeoutCache().size());
                 retryService.retryCached(SaveType.SIMPLE);
             }, 0, 5000, TimeUnit.MILLISECONDS);
