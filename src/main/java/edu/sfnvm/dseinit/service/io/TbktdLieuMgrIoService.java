@@ -44,6 +44,9 @@ public class TbktdLieuMgrIoService {
         this.saveTimeoutCache = saveTimeoutCache;
     }
 
+    /**
+     * Search
+     */
     public PagingData<TbktdLieuMgr> findWithoutSolrPaging(
         String queryStr, String pagingState, int size, int increment) {
         try {
@@ -64,8 +67,11 @@ public class TbktdLieuMgrIoService {
         return tbktDLieuMgrRepository.findWithoutSolrPaging(queryStr, pagingState, size);
     }
 
+    /**
+     * Find by partition keys
+     */
     public TbktdLieuMgr findByPartitionKeys(String mst, Instant ntao, UUID id)
-    throws ResourceNotFoundException {
+        throws ResourceNotFoundException {
         return tbktDLieuMgrRepository
             .findByPartitionKeys(mst, ntao, id)
             .orElseThrow(() -> new ResourceNotFoundException("Resource not found: TbktdLieuMgr"));
@@ -93,8 +99,9 @@ public class TbktdLieuMgrIoService {
         return result;
     }
 
-    // ===== IO save =====
-
+    /**
+     * Save
+     */
     public void saveAsync(TbktdLieuMgr entity) {
         tbktDLieuMgrRepository.saveAsync(entity).whenComplete((unused, ex) -> {
             if (ex != null) {
@@ -112,8 +119,9 @@ public class TbktdLieuMgrIoService {
         return tbktDLieuMgrRepository.boundStatementSave(entity);
     }
 
-    // ===== Util save =====
-
+    /**
+     * Util save
+     */
     public void saveList(List<TbktdLieuMgr> entityList) {
         List<TbktdLieuMgr> failed = tbktDLieuMgrRepository.saveListReturnFailed(entityList);
         if (!CollectionUtils.isEmpty(failed)) {

@@ -19,36 +19,41 @@ import java.util.stream.IntStream;
 
 @Slf4j
 @SpringBootTest
-public class DummyBatchInsertTest {
-  private final TbktdLieuMgrIoService tbktdLieuMgrIoService;
+class DummyBatchInsertTest {
+    private final TbktdLieuMgrIoService tbktdLieuMgrIoService;
 
-  @Autowired
-  public DummyBatchInsertTest(TbktdLieuMgrIoService tbktdLieuMgrIoService) {
-    this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
-  }
+    @Autowired
+    public DummyBatchInsertTest(TbktdLieuMgrIoService tbktdLieuMgrIoService) {
+        this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
+    }
 
-  @Test
-  void bulkInsertTest() {
-    EasyRandom er = new EasyRandom();
-    List<TbktdLieuMgr> toInsert = new ArrayList<>();
+    @Test
+    void bulkInsertTest() {
+        EasyRandom er = new EasyRandom();
+        List<TbktdLieuMgr> toInsert = new ArrayList<>();
 
-    final String mst = "0102738332";
-    final Instant ins = DateUtil.parseStringToUtcInstant("2022-05-11T00:00:00.000Z");
+        final String mst = "0310471746-377";
+        final Instant ins = DateUtil.parseStringToUtcInstant("2022-07-27T00:00:00.000Z");
 
-    IntStream.range(0, 90000).forEach(value -> {
-      TbktdLieuMgr tmp = er.nextObject(TbktdLieuMgr.class);
-      tmp.setMst(mst);
-      tmp.setNtao(ins);
-      tmp.setId(UUID.randomUUID());
+        IntStream.range(0, 200000).forEach(value -> {
+            TbktdLieuMgr tmp = er.nextObject(TbktdLieuMgr.class);
+            tmp.setMst(mst);
+            tmp.setNtao(ins);
+            tmp.setId(UUID.randomUUID());
 
-      tmp.setTtctiet(new ArrayList<>());
-      tmp.setDsloi(new ArrayList<>());
+            tmp.setTtctiet(new ArrayList<>());
+            tmp.setDsloi(new ArrayList<>());
 
-      toInsert.add(tmp);
-    });
+            toInsert.add(tmp);
+        });
 
-    List<BatchableStatement<?>> batch = new ArrayList<>();
-    toInsert.forEach(e -> batch.add(tbktdLieuMgrIoService.boundStatementSave(e)));
-    tbktdLieuMgrIoService.executeBatch(batch, BatchType.UNLOGGED, 100);
-  }
+        log.info("Done init input");
+
+        List<BatchableStatement<?>> batch = new ArrayList<>();
+        toInsert.forEach(e -> batch.add(tbktdLieuMgrIoService.boundStatementSave(e)));
+
+        log.info("Done init batch");
+
+        tbktdLieuMgrIoService.executeBatch(batch, BatchType.UNLOGGED, 100);
+    }
 }

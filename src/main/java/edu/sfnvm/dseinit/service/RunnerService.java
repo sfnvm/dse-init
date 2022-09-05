@@ -114,7 +114,7 @@ public class RunnerService implements ApplicationRunner {
 
     @SuppressWarnings("SameParameterValue")
     private void migrate(String query, SaveType saveType) {
-        final int[] increment = {1};
+        final int[] increment = {1}; // Start from 1
         PagingData<TbktdLieuMgr> queryResult = tbktdLieuMgrIoService
             .findWithoutSolrPaging(query, null, 1000, increment[0]);
         while (queryResult.getState() != null) {

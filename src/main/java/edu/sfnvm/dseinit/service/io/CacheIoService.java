@@ -40,7 +40,7 @@ public class CacheIoService {
         }
         List<TbktdLieuMgr> cachedList = nativeCache.asMap().values()
             .stream()
-            .map(o -> (TbktdLieuMgr) o)
+            .map(TbktdLieuMgr.class::cast)
             .collect(Collectors.toList());
         log.debug("Cache current size {}", cachedList.size());
         return cachedList;
@@ -53,12 +53,15 @@ public class CacheIoService {
         }
         List<StateTimeoutDto> cachedList = nativeCache.asMap().values()
             .stream()
-            .map(o -> (StateTimeoutDto) o)
+            .map(StateTimeoutDto.class::cast)
             .collect(Collectors.toList());
         log.debug("Cache current size {}", cachedList.size());
         return cachedList;
     }
 
+    /**
+     * Generic get Caches
+     */
     private Cache<Object, Object> getCache(String cacheName) {
         CaffeineCache caffeineCache = (CaffeineCache) cacheManager.getCache(cacheName);
         if (caffeineCache == null) {
@@ -68,6 +71,9 @@ public class CacheIoService {
         }
     }
 
+    /**
+     * Put caches
+     */
     public TbktdLieuMgr putMgrTimeoutCache(TbktdLieuMgr tbktdLieuNew) {
         return saveTimeoutCache.cache(tbktdLieuNew);
     }
@@ -77,6 +83,9 @@ public class CacheIoService {
         return stateTimeoutCache.cache(stateTimeoutDto);
     }
 
+    /**
+     * Clear caches
+     */
     public void clearMgrTimeoutCache() {
         saveTimeoutCache.clearCache();
     }
