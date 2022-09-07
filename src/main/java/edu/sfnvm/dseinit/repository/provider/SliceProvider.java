@@ -72,7 +72,8 @@ public class SliceProvider<T> {
             } else {
                 while (rows.hasNext()) {
                     Row row = rows.next();
-                    consumer.accept(entityHelper.get(row, false));
+                    // consumer.accept(entityHelper.get(row, false));
+                    consumer.accept(entityHelper.get(row));
                     if (!rows.hasNext()) {
                         // Reached the end of the result set, snag the token value
                         currentToken = row.getLong("system." + tokenColumn());
@@ -108,7 +109,8 @@ public class SliceProvider<T> {
         while (rs.getAvailableWithoutFetching() > 0) {
             Row row = rs.one();
             if (row != null) {
-                data.add(entityHelper.get(row, false));
+                // data.add(entityHelper.get(row, false));
+                data.add(entityHelper.get(row));
             }
         }
 
@@ -158,7 +160,8 @@ public class SliceProvider<T> {
         while (rs.getAvailableWithoutFetching() > 0) {
             Row row = rs.one();
             if (row != null) {
-                data.add(entityHelper.get(row, false));
+                // data.add(entityHelper.get(row, false));
+                data.add(entityHelper.get(row));
             }
         }
 

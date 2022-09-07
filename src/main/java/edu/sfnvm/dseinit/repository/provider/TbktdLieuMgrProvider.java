@@ -31,7 +31,8 @@ public class TbktdLieuMgrProvider {
 
         for (TbktdLieuMgr item : items) {
             BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
-            entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
+            // entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
+            entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET);
             try {
                 session.execute(boundStatementBuilder.build());
             } catch (AllNodesFailedException | QueryExecutionException | QueryValidationException e) {
@@ -48,7 +49,8 @@ public class TbktdLieuMgrProvider {
             try {
                 PreparedStatement saveStatement = session.prepare(entityHelper.insert().build());
                 BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
-                entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
+                // entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET, false);
+                entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET);
                 session.execute(boundStatementBuilder.build());
             } catch (AllNodesFailedException | QueryExecutionException | QueryValidationException e) {
                 log.error("Connection error for insert entity {}", item, e);

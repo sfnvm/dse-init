@@ -35,3 +35,5 @@ build/
 ###
 /src/main/resources/application-dev.yml
 /src/main/resources/application-uat.yml
+/src/main/resources/bootstrap.yml
+/src/main/resources/static/tmp/

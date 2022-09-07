@@ -32,10 +32,10 @@ class DummyBatchInsertTest {
         EasyRandom er = new EasyRandom();
         List<TbktdLieuMgr> toInsert = new ArrayList<>();
 
-        final String mst = "0310471746-377";
-        final Instant ins = DateUtil.parseStringToUtcInstant("2022-07-27T00:00:00.000Z");
+        final String mst = "4100258955";
+        final Instant ins = DateUtil.parseStringToUtcInstant("2022-06-28T00:00:00.000Z");
 
-        IntStream.range(0, 200000).forEach(value -> {
+        IntStream.range(0, 20000).forEach(value -> {
             TbktdLieuMgr tmp = er.nextObject(TbktdLieuMgr.class);
             tmp.setMst(mst);
             tmp.setNtao(ins);

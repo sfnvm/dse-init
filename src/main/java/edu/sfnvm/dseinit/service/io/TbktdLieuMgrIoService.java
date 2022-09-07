@@ -156,6 +156,14 @@ public class TbktdLieuMgrIoService {
         }
     }
 
+    /**
+     * Delete
+     */
+    public void deleteByPartitionKeys(String mst, Instant ntao) {
+        tbktDLieuMgrRepository.deleteByPartitionKeys(mst, ntao);
+    }
+
+
     @SuppressWarnings("SameParameterValue")
     private TbktdLieuMgr builder(
         TbktdLieuMgr sourceData,

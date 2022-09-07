@@ -66,8 +66,12 @@ public class RunnerService implements ApplicationRunner {
         this.cacheIoService = cacheIoService;
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
     public void run(ApplicationArguments args) throws Exception {
+        // Delete migrated records
+        deleteAcceptedRecords();
+
         URL path = StringUtils.hasLength(scanPath)
             ? new URL(scanPath)
             : getClass().getResource("/static/conditions");
@@ -110,6 +114,37 @@ public class RunnerService implements ApplicationRunner {
 
         // Mark done
         log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
+    }
+
+    @SuppressWarnings("Duplicates")
+    private void deleteAcceptedRecords() {
+        List<Pair<String, Instant>> conditions;
+        String pathStr = "/static/to-delete";
+        try {
+            URL path = getClass().getResource(pathStr);
+            conditions = Arrays.stream(Resources.toString(
+                    Objects.requireNonNull(path),
+                    StandardCharsets.UTF_8).split("\n"))
+                .filter(s -> StringUtils.hasLength(s) && !s.startsWith("#"))
+                .map(s -> s.split(";"))
+                .filter(strings -> strings.length == 2)
+                .map(split -> new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1])))
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn(
+                "Cannot find 'to-delete' file with path '{}'\n{}",
+                pathStr,
+                e.getMessage());
+            return;
+        }
+
+        for (Pair<String, Instant> condition : conditions) {
+            log.info("Deleting with partition key {}", condition);
+            tbktdLieuMgrIoService.deleteByPartitionKeys(
+                condition.getValue0(),
+                condition.getValue1()
+            );
+        }
     }
 
     @SuppressWarnings("SameParameterValue")

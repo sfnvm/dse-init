@@ -4,10 +4,7 @@ import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BatchType;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.mapper.annotations.Dao;
-import com.datastax.oss.driver.api.mapper.annotations.Insert;
-import com.datastax.oss.driver.api.mapper.annotations.QueryProvider;
-import com.datastax.oss.driver.api.mapper.annotations.Select;
+import com.datastax.oss.driver.api.mapper.annotations.*;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.repository.provider.CassandraBatchOpsProvider;
@@ -45,4 +42,7 @@ public interface TbktdLieuMgrRepository {
 
     @QueryProvider(providerClass = SliceProvider.class, entityHelpers = TbktdLieuMgr.class)
     PagingData<TbktdLieuMgr> findWithoutSolrPaging(String queryStr, String pagingState, int size);
+
+    @Delete(entityClass = TbktdLieuMgr.class)
+    void deleteByPartitionKeys(String mst, Instant ntao);
 }

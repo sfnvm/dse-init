@@ -21,7 +21,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity(defaultKeyspace = "test")
+@Entity(defaultKeyspace = "ks_hoadon")
 @NamingStrategy(convention = NamingConvention.CASE_INSENSITIVE)
 @CqlName("hddt_tbktdl_mgr")
 public class TbktdLieuMgr {
