@@ -41,6 +41,7 @@ public class RunnerService implements ApplicationRunner {
         TbktdLieuMgr.class.getAnnotation(CqlName.class).value());
     private static final String SELECT_TBKTDL_BY_PARTITION =
         PREPEND_TARGET_QUERY + "WHERE mst = '%s' AND ntao = '%s'";
+    static final int PAGE_SIZE = 5000;
 
     /**
      * <h2>IO Services</h2>
@@ -151,11 +152,11 @@ public class RunnerService implements ApplicationRunner {
     private void migrate(String query, SaveType saveType) {
         final int[] increment = {1}; // Start from 1
         PagingData<TbktdLieuMgr> queryResult = tbktdLieuMgrIoService
-            .findWithoutSolrPaging(query, null, 1000, increment[0]);
+            .findWithoutSolrPaging(query, null, PAGE_SIZE, increment[0]);
         while (queryResult.getState() != null) {
             tbktdLieuMgrIoService.loopSave(queryResult.getData(), increment, saveType);
             queryResult = tbktdLieuMgrIoService
-                .findWithoutSolrPaging(query, queryResult.getState(), 1000, increment[0]);
+                .findWithoutSolrPaging(query, queryResult.getState(), PAGE_SIZE, increment[0]);
             log.info("Complete migrate data with state: {}", queryResult.getState());
             log.info("Current increment: {}", increment[0]);
         }

@@ -45,4 +45,17 @@ public interface TbktdLieuMgrRepository {
 
     @Delete(entityClass = TbktdLieuMgr.class)
     void deleteByPartitionKeys(String mst, Instant ntao);
+
+    /**
+     * <h2>Partial update</h2>
+     */
+
+    @QueryProvider(providerClass = TbktdLieuMgrProvider.class, entityHelpers = TbktdLieuMgr.class)
+    List<TbktdLieuMgr> saveListDiffKhmshdReturnFailed(List<TbktdLieuMgr> items);
+
+    @QueryProvider(providerClass = TbktdLieuMgrProvider.class, entityHelpers = TbktdLieuMgr.class)
+    List<TbktdLieuMgr> saveListDiffUdtLoiGchuReturnFailed(List<TbktdLieuMgr> items);
+
+    @QueryProvider(providerClass = TbktdLieuMgrProvider.class, entityHelpers = TbktdLieuMgr.class)
+    List<TbktdLieuMgr> saveListDiffEnumsReturnFailed(List<TbktdLieuMgr> items);
 }

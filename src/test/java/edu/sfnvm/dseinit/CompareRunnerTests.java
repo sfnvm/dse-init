@@ -17,31 +17,31 @@ import java.util.stream.Collectors;
 public class CompareRunnerTests {
     @Test
     void compareTest() {
-        String pathStr = "/static/tmp/conditions";
+        String pathStr = "/static/tmp/migrate/conditions";
 
         List<String> runnedPathStr = Arrays.asList(
-            "/static/tmp/conditions-01",
-            "/static/tmp/conditions-02",
-            "/static/tmp/conditions-03",
-            "/static/tmp/conditions-04",
-            "/static/tmp/conditions-05",
-            "/static/tmp/conditions-06",
-            "/static/tmp/conditions-07",
-            "/static/tmp/conditions-08",
-            "/static/tmp/conditions-09-01",
-            "/static/tmp/conditions-09-02",
-            "/static/tmp/conditions-09-03",
-            "/static/tmp/conditions-09-04",
-            "/static/tmp/conditions-09-05",
-            "/static/tmp/conditions-10-01",
-            "/static/tmp/conditions-10-02",
-            "/static/tmp/conditions-10-03",
-            "/static/tmp/conditions-10-04",
-            "/static/tmp/conditions-10-05-01",
-            "/static/tmp/conditions-10-05-02",
-            "/static/tmp/conditions-10-05-03",
-            "/static/tmp/conditions-10-05-04",
-            "/static/tmp/conditions-10-05-05"
+                "/static/tmp/migrate/conditions-01",
+                "/static/tmp/migrate/conditions-02",
+                "/static/tmp/migrate/conditions-03",
+                "/static/tmp/migrate/conditions-04",
+                "/static/tmp/migrate/conditions-05",
+                "/static/tmp/migrate/conditions-06",
+                "/static/tmp/migrate/conditions-07",
+                "/static/tmp/migrate/conditions-08",
+                "/static/tmp/migrate/conditions-09-01",
+                "/static/tmp/migrate/conditions-09-02",
+                "/static/tmp/migrate/conditions-09-03",
+                "/static/tmp/migrate/conditions-09-04",
+                "/static/tmp/migrate/conditions-09-05",
+                "/static/tmp/migrate/conditions-10-01",
+                "/static/tmp/migrate/conditions-10-02",
+                "/static/tmp/migrate/conditions-10-03",
+                "/static/tmp/migrate/conditions-10-04",
+                "/static/tmp/migrate/conditions-10-05-01",
+                "/static/tmp/migrate/conditions-10-05-02",
+                "/static/tmp/migrate/conditions-10-05-03",
+                "/static/tmp/migrate/conditions-10-05-04",
+                "/static/tmp/migrate/conditions-10-05-05"
         );
 
         Set<Pair<String, Instant>> originSet;

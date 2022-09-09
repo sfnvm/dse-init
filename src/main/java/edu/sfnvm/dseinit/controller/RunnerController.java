@@ -48,19 +48,6 @@ public class RunnerController {
         return ResponseEntity.ok(cacheIoService.getMgrTimeoutCache().size());
     }
 
-    // @PostMapping("caches/mgr")
-    // public ResponseEntity<TbktdLieuNew> postMgrTimeoutCache(
-    // 		@RequestBody TbktdLieuNew tbktdLieuNew
-    // ) {
-    // 	return ResponseEntity.ok(runnerService.putMgrTimeoutCache(tbktdLieuNew));
-    // }
-
-    // @DeleteMapping("caches/mgr")
-    // public ResponseEntity<Void> clearMgrTimeoutCache() {
-    // 	runnerService.clearMgrTimeoutCache();
-    // 	return ResponseEntity.ok().build();
-    // }
-
     /**
      * <h2>State</h2>
      */
@@ -73,17 +60,6 @@ public class RunnerController {
     public ResponseEntity<Integer> getStateTimeoutCacheSize() {
         return ResponseEntity.ok(cacheIoService.getStateTimeoutCache().size());
     }
-
-    // @PostMapping("caches/state")
-    // public ResponseEntity<StateTimeoutDto> postStateTimeoutCache(@RequestBody StateTimeoutDto dto) {
-    // 	return ResponseEntity.ok(runnerService.putStateTimeoutCache(dto));
-    // }
-
-    // @DeleteMapping("caches/state")
-    // public ResponseEntity<Void> clearStateTimeoutCache() {
-    // 	runnerService.clearStateTimeoutCache();
-    // 	return ResponseEntity.ok().build();
-    // }
 
     @Data
     @Builder

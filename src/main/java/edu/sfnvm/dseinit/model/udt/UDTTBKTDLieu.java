@@ -34,4 +34,5 @@ public class UDTTBKTDLieu {
     private String mhhoa;
     private String thhdvu;
     private List<UDTLoi> dsloi;
+    private String khmshd;
 }

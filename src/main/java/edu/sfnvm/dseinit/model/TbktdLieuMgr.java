@@ -2,10 +2,6 @@ package edu.sfnvm.dseinit.model;
 
 import com.datastax.oss.driver.api.mapper.annotations.*;
 import com.datastax.oss.driver.api.mapper.entity.naming.NamingConvention;
-import edu.sfnvm.dseinit.model.enums.PTHDon;
-import edu.sfnvm.dseinit.model.enums.THKTDLieu;
-import edu.sfnvm.dseinit.model.enums.TTTBKTDLieu;
-import edu.sfnvm.dseinit.model.enums.TTXLKTDLieu;
 import edu.sfnvm.dseinit.model.udt.UDTLoi;
 import edu.sfnvm.dseinit.model.udt.UDTTBKTDLieu;
 import lombok.AllArgsConstructor;
@@ -39,10 +35,16 @@ public class TbktdLieuMgr {
     private String ten;
     private String tnnt;
     private Byte ltbao;
-    private THKTDLieu thop;
+
+    // private THKTDLieu thop;
+    private Byte thop;
+
     private String ccu;
     private Instant nnhan;
-    private PTHDon ptgui;
+
+    // private PTHDon ptgui;
+    private Byte ptgui;
+
     private String tvandnkntt;
     private String mtdtchieu;
     private Integer sluong;
@@ -51,7 +53,10 @@ public class TbktdLieuMgr {
     private List<UDTTBKTDLieu> ttctiet;
     private Instant ncnhat;
     private String pban;
-    private TTXLKTDLieu ttxly;
+
+    // private TTXLKTDLieu ttxly;
+    private Byte ttxly;
+
     private String so;
     private Instant ngay;
     private Instant nky;
@@ -59,7 +64,10 @@ public class TbktdLieuMgr {
     private String tlky;
     private String cks;
     private UUID hsgoc;
-    private TTTBKTDLieu tttbao;
+
+    // private TTTBKTDLieu tttbao;
+    private Byte tttbao;
+
     private Instant ngtbao;
     private String mtdiep;
     private String mlgtbao;

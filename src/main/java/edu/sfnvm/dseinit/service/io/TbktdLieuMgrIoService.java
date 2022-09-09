@@ -123,7 +123,22 @@ public class TbktdLieuMgrIoService {
      * Util save
      */
     public void saveList(List<TbktdLieuMgr> entityList) {
-        List<TbktdLieuMgr> failed = tbktDLieuMgrRepository.saveListReturnFailed(entityList);
+        // List<TbktdLieuMgr> failed =
+        // 	tbktDLieuMgrRepository
+        // 		.saveListReturnFailed(entityList);
+
+        // List<TbktdLieuMgr> failed =
+        // 	tbktDLieuMgrRepository
+        // 		.saveListDiffKhmshdReturnFailed(entityList);
+
+        // List<TbktdLieuMgr> failed =
+        // 	tbktDLieuMgrRepository
+        // 		.saveListDiffUdtLoiGchuReturnFailed(entityList);
+
+        List<TbktdLieuMgr> failed =
+            tbktDLieuMgrRepository
+                .saveListDiffEnumsReturnFailed(entityList);
+
         if (!CollectionUtils.isEmpty(failed)) {
             failed.forEach(saveTimeoutCache::cache);
         }
