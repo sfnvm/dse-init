@@ -14,6 +14,15 @@ spring:
         connect-timeout: 10s
       username: cassandra
       password: teca@12#
+  datasource:
+    url: jdbc:h2:mem:sfnvm
+    username: sfnvm
+    password: SFNvm
+    driverClassName: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
 server:
   port: 8081
 scan:

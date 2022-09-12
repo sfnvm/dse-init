@@ -17,7 +17,6 @@
     <java.version>1.8</java.version>
     <spring-cloud.version>2020.0.0</spring-cloud.version>
     <rsql.version>2.1.0</rsql.version>
-    <!--<dse.driver.version>4.14.1</dse.driver.version>-->
     <dse.driver.version>4.10.0</dse.driver.version>
     <dse.spark.version>6.8.9</dse.spark.version>
     <lucene.queryparser.version>6.6.6</lucene.queryparser.version>
@@ -146,6 +145,17 @@
       <groupId>me.tongfei</groupId>
       <artifactId>progressbar</artifactId>
       <version>0.9.3</version>
+    </dependency>
+
+    <!--Local database-->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>runtime</scope>
     </dependency>
   </dependencies>
 

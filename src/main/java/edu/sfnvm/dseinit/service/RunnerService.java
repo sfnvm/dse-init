@@ -5,6 +5,9 @@ import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.google.common.io.Resources;
 import edu.sfnvm.dseinit.dto.PagingData;
 import edu.sfnvm.dseinit.dto.enums.SaveType;
+import edu.sfnvm.dseinit.h2.model.TbktdlCondition;
+import edu.sfnvm.dseinit.h2.repository.TbktdlConditionRepository;
+import edu.sfnvm.dseinit.h2.service.TbktdlConditionService;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
 import edu.sfnvm.dseinit.service.io.CacheIoService;
 import edu.sfnvm.dseinit.service.io.TbktdLieuMgrIoService;
@@ -20,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -48,6 +52,16 @@ public class RunnerService implements ApplicationRunner {
      */
     private final TbktdLieuMgrIoService tbktdLieuMgrIoService;
 
+    /**
+     * <h2>Services</h2>
+     */
+    private final TbktdlConditionService tbktdlConditionService;
+
+    /**
+     * <h2>Direct Repositories</h2>
+     */
+    private final TbktdlConditionRepository tbktdlConditionRepository;
+
     private final RetryService retryService;
     private final CacheIoService cacheIoService;
 
@@ -60,11 +74,23 @@ public class RunnerService implements ApplicationRunner {
     @Autowired
     public RunnerService(
         TbktdLieuMgrIoService tbktdLieuMgrIoService,
+        TbktdlConditionService tbktdlConditionService,
+        TbktdlConditionRepository tbktdlConditionRepository,
         RetryService retryService,
         CacheIoService cacheIoService) {
         this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
+        this.tbktdlConditionService = tbktdlConditionService;
+        this.tbktdlConditionRepository = tbktdlConditionRepository;
         this.retryService = retryService;
         this.cacheIoService = cacheIoService;
+    }
+
+    @PostConstruct
+    public void init() throws InterruptedException {
+        tbktdlConditionService.initData();
+        Thread.sleep(1000);
+        List<TbktdlCondition> all = tbktdlConditionRepository.findAll();
+        log.info(Arrays.toString(all.toArray()));
     }
 
     @SuppressWarnings("Duplicates")
