@@ -19,7 +19,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity(defaultKeyspace = "ks_hoadon")
 @NamingStrategy(convention = NamingConvention.CASE_INSENSITIVE)
-@CqlName("hddt_tbktdl_mgr")
+@CqlName("tbktdl_mgr")
 public class TbktdLieuMgr {
     @PartitionKey(1)
     private String mst;

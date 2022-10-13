@@ -10,10 +10,6 @@ import com.datastax.oss.driver.api.mapper.MapperContext;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
 import com.datastax.oss.driver.api.mapper.entity.saving.NullSavingStrategy;
 import edu.sfnvm.dseinit.model.TbktdLieuMgr;
-import edu.sfnvm.dseinit.model.enums.PTHDon;
-import edu.sfnvm.dseinit.model.enums.THKTDLieu;
-import edu.sfnvm.dseinit.model.enums.TTTBKTDLieu;
-import edu.sfnvm.dseinit.model.enums.TTXLKTDLieu;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
@@ -154,34 +150,34 @@ public class TbktdLieuMgrProvider {
         int count = 0;
 
         for (TbktdLieuMgr item : items) {
-            boolean invalidThop = item.getThop() != null && THKTDLieu.fromValue(item.getThop()) == null;
-            boolean invalidPtgui = item.getPtgui() != null && PTHDon.fromValue(item.getPtgui()) == null;
-            boolean invalidTtxly = item.getTtxly() != null && TTXLKTDLieu.fromValue(item.getTtxly()) == null;
-            boolean invalidTttbao = item.getTttbao() != null && TTTBKTDLieu.fromValue(item.getTttbao()) == null;
-
-            if (invalidThop) log.info("invalidThop {}", item.getThop());
-            if (invalidPtgui) log.info("invalidPtgui {}", item.getPtgui());
-            if (invalidTtxly) log.info("invalidTtxly {}", item.getTtxly());
-            if (invalidTttbao) log.info("invalidTttbao {}", item.getTttbao());
-
-            if (invalidThop || invalidPtgui || invalidTtxly || invalidTttbao) {
-                try {
-                    PreparedStatement saveStatement = session.prepare(entityHelper.insert().build());
-                    BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
-                    entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET);
-                    session.execute(boundStatementBuilder.build());
-                    count++;
-                } catch (
-                    AllNodesFailedException
-                    | QueryExecutionException
-                    | QueryValidationException e) {
-                    log.error("Connection error for insert entity {}", item, e);
-                    failed.add(item);
-                } catch (Exception e) {
-                    log.error("Timeout or unhandled error for insert entity {}", item, e);
-                    failed.add(item);
-                }
+            // boolean invalidThop = item.getThop() != null && THKTDLieu.fromValue(item.getThop()) == null;
+            // boolean invalidPtgui = item.getPtgui() != null && PTHDon.fromValue(item.getPtgui()) == null;
+            // boolean invalidTtxly = item.getTtxly() != null && TTXLKTDLieu.fromValue(item.getTtxly()) == null;
+            // boolean invalidTttbao = item.getTttbao() != null && TTTBKTDLieu.fromValue(item.getTttbao()) == null;
+            //
+            // if (invalidThop) log.info("invalidThop {}", item.getThop());
+            // if (invalidPtgui) log.info("invalidPtgui {}", item.getPtgui());
+            // if (invalidTtxly) log.info("invalidTtxly {}", item.getTtxly());
+            // if (invalidTttbao) log.info("invalidTttbao {}", item.getTttbao());
+            //
+            // if (invalidThop || invalidPtgui || invalidTtxly || invalidTttbao) {
+            try {
+                PreparedStatement saveStatement = session.prepare(entityHelper.insert().build());
+                BoundStatementBuilder boundStatementBuilder = saveStatement.boundStatementBuilder();
+                entityHelper.set(item, boundStatementBuilder, NullSavingStrategy.DO_NOT_SET);
+                session.execute(boundStatementBuilder.build());
+                count++;
+            } catch (
+                AllNodesFailedException
+                | QueryExecutionException
+                | QueryValidationException e) {
+                log.error("Connection error for insert entity {}", item, e);
+                failed.add(item);
+            } catch (Exception e) {
+                log.error("Timeout or unhandled error for insert entity {}", item, e);
+                failed.add(item);
             }
+            // }
         }
 
         log.info("Saved records count: {}", count);

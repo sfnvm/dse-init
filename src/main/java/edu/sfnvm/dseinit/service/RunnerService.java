@@ -96,7 +96,6 @@ public class RunnerService implements ApplicationRunner {
     @SuppressWarnings("Duplicates")
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        // Delete migrated records
         deleteAcceptedRecords();
 
         URL path = StringUtils.hasLength(scanPath)
