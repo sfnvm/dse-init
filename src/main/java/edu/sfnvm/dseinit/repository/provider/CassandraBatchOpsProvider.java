@@ -12,23 +12,23 @@ import java.util.List;
 
 @Slf4j
 public class CassandraBatchOpsProvider {
-    private final CqlSession session;
+  private final CqlSession session;
 
-    public CassandraBatchOpsProvider(MapperContext context) {
-        this.session = context.getSession();
-    }
+  public CassandraBatchOpsProvider(MapperContext context) {
+    this.session = context.getSession();
+  }
 
-    public void executeBatch(List<BatchableStatement<?>> orgBatch, BatchType type, int size) {
-        Lists.partition(orgBatch, size).forEach(batchableStatements -> {
-            BatchStatement tmpBatch = BatchStatement
-                .builder(type == null ? BatchType.LOGGED : type)
-                .addStatements(batchableStatements)
-                .build();
-            try {
-                session.execute(tmpBatch);
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
-            }
-        });
-    }
+  public void executeBatch(List<BatchableStatement<?>> orgBatch, BatchType type, int size) {
+    Lists.partition(orgBatch, size).forEach(batchableStatements -> {
+      BatchStatement tmpBatch = BatchStatement
+        .builder(type == null ? BatchType.LOGGED : type)
+        .addStatements(batchableStatements)
+        .build();
+      try {
+        session.execute(tmpBatch);
+      } catch (Exception e) {
+        log.error(e.getMessage(), e);
+      }
+    });
+  }
 }

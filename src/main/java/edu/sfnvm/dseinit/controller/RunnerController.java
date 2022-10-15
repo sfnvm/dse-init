@@ -18,52 +18,52 @@ import java.util.List;
 @RestController
 @RequestMapping("runners")
 public class RunnerController {
-    private final RetryService retryService;
-    private final CacheIoService cacheIoService;
+  private final RetryService retryService;
+  private final CacheIoService cacheIoService;
 
-    @Autowired
-    public RunnerController(
-        RetryService retryService,
-        CacheIoService cacheIoService) {
-        this.retryService = retryService;
-        this.cacheIoService = cacheIoService;
-    }
+  @Autowired
+  public RunnerController(
+    RetryService retryService,
+    CacheIoService cacheIoService) {
+    this.retryService = retryService;
+    this.cacheIoService = cacheIoService;
+  }
 
-    @GetMapping("caches/retry")
-    public ResponseEntity<Response> retryCaches() {
-        retryService.retryCached(SaveType.PREPARED);
-        return ResponseEntity.ok(Response.builder().status("Running").build());
-    }
+  @GetMapping("caches/retry")
+  public ResponseEntity<Response> retryCaches() {
+    retryService.retryCached(SaveType.PREPARED);
+    return ResponseEntity.ok(Response.builder().status("Running").build());
+  }
 
-    /**
-     * <h2>Mgr</h2>
-     */
-    @GetMapping("caches/mgr")
-    public ResponseEntity<List<TbktdLieuMgr>> getMgrTimeoutCache() {
-        return ResponseEntity.ok(cacheIoService.getMgrTimeoutCache());
-    }
+  /**
+   * <h2>Mgr</h2>
+   */
+  @GetMapping("caches/mgr")
+  public ResponseEntity<List<TbktdLieuMgr>> getMgrTimeoutCache() {
+    return ResponseEntity.ok(cacheIoService.getMgrTimeoutCache());
+  }
 
-    @GetMapping("caches/mgr/size")
-    public ResponseEntity<Integer> getMgrTimeoutCacheSize() {
-        return ResponseEntity.ok(cacheIoService.getMgrTimeoutCache().size());
-    }
+  @GetMapping("caches/mgr/size")
+  public ResponseEntity<Integer> getMgrTimeoutCacheSize() {
+    return ResponseEntity.ok(cacheIoService.getMgrTimeoutCache().size());
+  }
 
-    /**
-     * <h2>State</h2>
-     */
-    @GetMapping("caches/state")
-    public ResponseEntity<List<StateTimeoutDto>> getStateTimeoutCache() {
-        return ResponseEntity.ok(cacheIoService.getStateTimeoutCache());
-    }
+  /**
+   * <h2>State</h2>
+   */
+  @GetMapping("caches/state")
+  public ResponseEntity<List<StateTimeoutDto>> getStateTimeoutCache() {
+    return ResponseEntity.ok(cacheIoService.getStateTimeoutCache());
+  }
 
-    @GetMapping("caches/state/size")
-    public ResponseEntity<Integer> getStateTimeoutCacheSize() {
-        return ResponseEntity.ok(cacheIoService.getStateTimeoutCache().size());
-    }
+  @GetMapping("caches/state/size")
+  public ResponseEntity<Integer> getStateTimeoutCacheSize() {
+    return ResponseEntity.ok(cacheIoService.getStateTimeoutCache().size());
+  }
 
-    @Data
-    @Builder
-    public static class Response {
-        private String status;
-    }
+  @Data
+  @Builder
+  public static class Response {
+    private String status;
+  }
 }

@@ -19,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -39,174 +41,180 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class RunnerService implements ApplicationRunner {
-    private static final String PREPEND_TARGET_QUERY = String.format(
-        "SELECT * FROM %s.%s ",
-        TbktdLieuMgr.class.getAnnotation(Entity.class).defaultKeyspace(),
-        TbktdLieuMgr.class.getAnnotation(CqlName.class).value());
-    private static final String SELECT_TBKTDL_BY_PARTITION =
-        PREPEND_TARGET_QUERY + "WHERE mst = '%s' AND ntao = '%s'";
-    static final int PAGE_SIZE = 5000;
+  private static final String PREPEND_TARGET_QUERY = String.format(
+    "SELECT * FROM %s.%s ",
+    TbktdLieuMgr.class.getAnnotation(Entity.class).defaultKeyspace(),
+    TbktdLieuMgr.class.getAnnotation(CqlName.class).value());
+  private static final String SELECT_TBKTDL_BY_PARTITION =
+    PREPEND_TARGET_QUERY + "WHERE mst = '%s' AND ntao = '%s'";
+  static final int PAGE_SIZE = 50;
 
-    /**
-     * <h2>IO Services</h2>
-     */
-    private final TbktdLieuMgrIoService tbktdLieuMgrIoService;
+  /**
+   * <h2>IO Services</h2>
+   */
+  private final TbktdLieuMgrIoService tbktdLieuMgrIoService;
 
-    /**
-     * <h2>Services</h2>
-     */
-    private final TbktdlConditionService tbktdlConditionService;
+  /**
+   * <h2>Services</h2>
+   */
+  private final TbktdlConditionService tbktdlConditionService;
 
-    /**
-     * <h2>Direct Repositories</h2>
-     */
-    private final TbktdlConditionRepository tbktdlConditionRepository;
+  /**
+   * <h2>Direct Repositories</h2>
+   */
+  private final TbktdlConditionRepository tbktdlConditionRepository;
 
-    private final RetryService retryService;
-    private final CacheIoService cacheIoService;
+  private final RetryService retryService;
+  private final CacheIoService cacheIoService;
 
-    @Value("${scan.path:}")
-    private String scanPath;
+  private final ApplicationContext context;
 
-    @Value("${retry.till.dead:false}")
-    private boolean retryTillDead;
+  @Value("${scan.path:}")
+  private String scanPath;
 
-    @Autowired
-    public RunnerService(
-        TbktdLieuMgrIoService tbktdLieuMgrIoService,
-        TbktdlConditionService tbktdlConditionService,
-        TbktdlConditionRepository tbktdlConditionRepository,
-        RetryService retryService,
-        CacheIoService cacheIoService) {
-        this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
-        this.tbktdlConditionService = tbktdlConditionService;
-        this.tbktdlConditionRepository = tbktdlConditionRepository;
-        this.retryService = retryService;
-        this.cacheIoService = cacheIoService;
+  @Value("${retry.till.dead:false}")
+  private boolean retryTillDead;
+
+  @Autowired
+  public RunnerService(
+    TbktdLieuMgrIoService tbktdLieuMgrIoService,
+    TbktdlConditionService tbktdlConditionService,
+    TbktdlConditionRepository tbktdlConditionRepository,
+    RetryService retryService,
+    CacheIoService cacheIoService,
+    ApplicationContext context) {
+    this.tbktdLieuMgrIoService = tbktdLieuMgrIoService;
+    this.tbktdlConditionService = tbktdlConditionService;
+    this.tbktdlConditionRepository = tbktdlConditionRepository;
+    this.retryService = retryService;
+    this.cacheIoService = cacheIoService;
+    this.context = context;
+  }
+
+  @PostConstruct
+  public void init() throws InterruptedException {
+    tbktdlConditionService.initData();
+    Thread.sleep(1000);
+    List<TbktdlCondition> all = tbktdlConditionRepository.findAll();
+    log.info(Arrays.toString(all.toArray()));
+  }
+
+  @SuppressWarnings("Duplicates")
+  @Override
+  public void run(ApplicationArguments args) throws Exception {
+    deleteAcceptedRecords();
+
+    URL path = StringUtils.hasLength(scanPath)
+      ? new URL(scanPath)
+      : getClass().getResource("/static/conditions");
+
+    log.info("Start scan file path: {}", path);
+
+    List<Pair<String, Instant>> conditions = Arrays.stream(Resources.toString(
+        Objects.requireNonNull(path),
+        StandardCharsets.UTF_8).split("\n"))
+      .filter(s -> StringUtils.hasLength(s) && !s.startsWith("#"))
+      .map(s -> s.split(";"))
+      .filter(strings -> strings.length == 2)
+      .map(split -> new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1])))
+      .collect(Collectors.toList());
+
+    if (CollectionUtils.isEmpty(conditions)) {
+      log.info("Condition list empty, skip migrate tbktdlieu");
+      return;
     }
 
-    @PostConstruct
-    public void init() throws InterruptedException {
-        tbktdlConditionService.initData();
-        Thread.sleep(1000);
-        List<TbktdlCondition> all = tbktdlConditionRepository.findAll();
-        log.info(Arrays.toString(all.toArray()));
+    Instant start = Instant.now();
+    log.info("Mannual audit data started at: {}", start);
+
+    // Query with ProgressBar status
+    try (ProgressBar pb = new ProgressBar("Conditions Step", conditions.size())) {
+      conditions.forEach(c -> {
+        String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
+        log.info("=== Start with query: {}", query);
+        migrate(query, SaveType.PREPARED);
+        pb.step();
+      });
     }
 
-    @SuppressWarnings("Duplicates")
-    @Override
-    public void run(ApplicationArguments args) throws Exception {
-        deleteAcceptedRecords();
+    log.info("Start auto retry once last time");
+    retryService.retryCached(SaveType.PREPARED);
 
-        URL path = StringUtils.hasLength(scanPath)
-            ? new URL(scanPath)
-            : getClass().getResource("/static/conditions");
-
-        log.info("Start scan file path: {}", path);
-
-        List<Pair<String, Instant>> conditions = Arrays.stream(Resources.toString(
-                Objects.requireNonNull(path),
-                StandardCharsets.UTF_8).split("\n"))
-            .filter(s -> StringUtils.hasLength(s) && !s.startsWith("#"))
-            .map(s -> s.split(";"))
-            .filter(strings -> strings.length == 2)
-            .map(split -> new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1])))
-            .collect(Collectors.toList());
-
-        if (CollectionUtils.isEmpty(conditions)) {
-            log.info("Condition list empty, skip migrate tbktdlieu");
-            return;
-        }
-
-        Instant start = Instant.now();
-        log.info("Mannual audit data started at: {}", start);
-
-        // Query with ProgressBar status
-        try (ProgressBar pb = new ProgressBar("Conditions Step", conditions.size())) {
-            conditions.forEach(c -> {
-                String query = String.format(SELECT_TBKTDL_BY_PARTITION, c.getValue0(), c.getValue1());
-                log.info("=== Start with query: {}", query);
-                migrate(query, SaveType.PREPARED);
-                pb.step();
-            });
-        }
-
-        log.info("Start auto retry once last time");
-        retryService.retryCached(SaveType.PREPARED);
-
-        if (retryTillDead) {
-            retryTillDead();
-        }
-
-        // Mark done
-        log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
+    if (retryTillDead) {
+      retryTillDead();
     }
 
-    @SuppressWarnings("Duplicates")
-    private void deleteAcceptedRecords() {
-        List<Pair<String, Instant>> conditions;
-        String pathStr = "/static/to-delete";
-        try {
-            URL path = getClass().getResource(pathStr);
-            conditions = Arrays.stream(Resources.toString(
-                    Objects.requireNonNull(path),
-                    StandardCharsets.UTF_8).split("\n"))
-                .filter(s -> StringUtils.hasLength(s) && !s.startsWith("#"))
-                .map(s -> s.split(";"))
-                .filter(strings -> strings.length == 2)
-                .map(split -> new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1])))
-                .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.warn(
-                "Cannot find 'to-delete' file with path '{}'\n{}",
-                pathStr,
-                e.getMessage());
-            return;
-        }
+    // Mark done
+    log.info("Mannual audit data done at: {}", Duration.between(start, Instant.now()));
 
-        for (Pair<String, Instant> condition : conditions) {
-            log.info("Deleting with partition key {}", condition);
-            tbktdLieuMgrIoService.deleteByPartitionKeys(
-                condition.getValue0(),
-                condition.getValue1()
-            );
-        }
+    System.exit(/*Exit code*/ SpringApplication.exit(context, () -> 0));
+  }
+
+  @SuppressWarnings("Duplicates")
+  private void deleteAcceptedRecords() {
+    List<Pair<String, Instant>> conditions;
+    String pathStr = "/static/to-delete";
+    try {
+      URL path = getClass().getResource(pathStr);
+      conditions = Arrays.stream(Resources.toString(
+          Objects.requireNonNull(path),
+          StandardCharsets.UTF_8).split("\n"))
+        .filter(s -> StringUtils.hasLength(s) && !s.startsWith("#"))
+        .map(s -> s.split(";"))
+        .filter(strings -> strings.length == 2)
+        .map(split -> new Pair<>(split[0], DateUtil.parseStringToUtcInstant(split[1])))
+        .collect(Collectors.toList());
+    } catch (Exception e) {
+      log.warn(
+        "Cannot find 'to-delete' file with path '{}'\n{}",
+        pathStr,
+        e.getMessage());
+      return;
     }
 
-    @SuppressWarnings("SameParameterValue")
-    private void migrate(String query, SaveType saveType) {
-        final int[] increment = {1}; // Start from 1
-        PagingData<TbktdLieuMgr> queryResult = tbktdLieuMgrIoService
-            .findWithoutSolrPaging(query, null, PAGE_SIZE, increment[0]);
-        while (queryResult.getState() != null) {
-            tbktdLieuMgrIoService.loopSave(queryResult.getData(), increment, saveType);
-            queryResult = tbktdLieuMgrIoService
-                .findWithoutSolrPaging(query, queryResult.getState(), PAGE_SIZE, increment[0]);
-            log.info("Complete migrate data with state: {}", queryResult.getState());
-            log.info("Current increment: {}", increment[0]);
-        }
-        // Last page
-        tbktdLieuMgrIoService.loopSave(queryResult.getData(), increment, saveType);
-        log.info("Complete migrate data with state: {}", queryResult.getState());
-        log.info("Current increment: {}", increment[0]);
+    for (Pair<String, Instant> condition : conditions) {
+      log.info("Deleting with partition key {}", condition);
+      tbktdLieuMgrIoService.deleteByPartitionKeys(
+        condition.getValue0(),
+        condition.getValue1()
+      );
     }
+  }
 
-    private void retryTillDead() {
-        log.info("Retry till dead !!!");
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        while (!CollectionUtils.isEmpty(cacheIoService.getStateTimeoutCache())
-            && !CollectionUtils.isEmpty(cacheIoService.getMgrTimeoutCache())) {
-            executor.scheduleAtFixedRate(() -> {
-                log.warn("'Retry till dead' status: Still trying");
-                log.warn(
-                    "'Retry till dead' cacheIoService.getStateTimeoutCache().size(): {}",
-                    cacheIoService.getStateTimeoutCache().size());
-                log.warn(
-                    "'Retry till dead' cacheIoService.getMgrTimeoutCache().size(): {}",
-                    cacheIoService.getMgrTimeoutCache().size());
-                retryService.retryCached(SaveType.SIMPLE);
-            }, 0, 5000, TimeUnit.MILLISECONDS);
-        }
-        executor.shutdown();
+  @SuppressWarnings("SameParameterValue")
+  private void migrate(String query, SaveType saveType) {
+    final int[] increment = {1}; // Start from 1
+    PagingData<TbktdLieuMgr> queryResult = tbktdLieuMgrIoService
+      .findWithoutSolrPaging(query, null, PAGE_SIZE, increment[0]);
+    while (queryResult.getState() != null) {
+      tbktdLieuMgrIoService.loopSave(queryResult.getData(), increment, saveType);
+      queryResult = tbktdLieuMgrIoService
+        .findWithoutSolrPaging(query, queryResult.getState(), PAGE_SIZE, increment[0]);
+      log.info("Complete migrate data with state: {}", queryResult.getState());
+      log.info("Current increment: {}", increment[0]);
     }
+    // Last page
+    tbktdLieuMgrIoService.loopSave(queryResult.getData(), increment, saveType);
+    log.info("Complete migrate data with state: {}", queryResult.getState());
+    log.info("Current increment: {}", increment[0]);
+  }
+
+  private void retryTillDead() {
+    log.info("Retry till dead !!!");
+    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    while (!CollectionUtils.isEmpty(cacheIoService.getStateTimeoutCache())
+      && !CollectionUtils.isEmpty(cacheIoService.getMgrTimeoutCache())) {
+      executor.scheduleAtFixedRate(() -> {
+        log.warn("'Retry till dead' status: Still trying");
+        log.warn(
+          "'Retry till dead' cacheIoService.getStateTimeoutCache().size(): {}",
+          cacheIoService.getStateTimeoutCache().size());
+        log.warn(
+          "'Retry till dead' cacheIoService.getMgrTimeoutCache().size(): {}",
+          cacheIoService.getMgrTimeoutCache().size());
+        retryService.retryCached(SaveType.SIMPLE);
+      }, 0, 5000, TimeUnit.MILLISECONDS);
+    }
+    executor.shutdown();
+  }
 }

@@ -14,8 +14,8 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class PagingData<T> {
-    private List<T> data;
-    private String state;
-    private int size;
-    private Long total;
+  private List<T> data;
+  private String state;
+  private int size;
+  private Long total;
 }

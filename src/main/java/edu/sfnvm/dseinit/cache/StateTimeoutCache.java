@@ -10,14 +10,14 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class StateTimeoutCache {
-    @Cacheable(value = CacheConstants.STATE, sync = true)
-    public StateTimeoutDto cache(StateTimeoutDto stateTimeoutDto) {
-        log.info("Cache miss {} for value: {}", CacheConstants.STATE, stateTimeoutDto);
-        return stateTimeoutDto;
-    }
+  @Cacheable(value = CacheConstants.STATE, sync = true)
+  public StateTimeoutDto cache(StateTimeoutDto stateTimeoutDto) {
+    log.info("Cache miss {} for value: {}", CacheConstants.STATE, stateTimeoutDto);
+    return stateTimeoutDto;
+  }
 
-    @CacheEvict(value = CacheConstants.STATE, allEntries = true)
-    public void clearCache() {
-        log.info("Clear all cache: {}", CacheConstants.STATE);
-    }
+  @CacheEvict(value = CacheConstants.STATE, allEntries = true)
+  public void clearCache() {
+    log.info("Clear all cache: {}", CacheConstants.STATE);
+  }
 }

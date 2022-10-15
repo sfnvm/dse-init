@@ -1,6 +1,10 @@
 package edu.sfnvm.dseinit.model;
 
-import com.datastax.oss.driver.api.mapper.annotations.*;
+import com.datastax.oss.driver.api.mapper.annotations.ClusteringColumn;
+import com.datastax.oss.driver.api.mapper.annotations.CqlName;
+import com.datastax.oss.driver.api.mapper.annotations.Entity;
+import com.datastax.oss.driver.api.mapper.annotations.NamingStrategy;
+import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
 import com.datastax.oss.driver.api.mapper.entity.naming.NamingConvention;
 import edu.sfnvm.dseinit.model.udt.UDTLoi;
 import edu.sfnvm.dseinit.model.udt.UDTTBKTDLieu;
@@ -21,62 +25,62 @@ import java.util.UUID;
 @NamingStrategy(convention = NamingConvention.CASE_INSENSITIVE)
 @CqlName("hddt_tbktdl_mgr")
 public class TbktdLieuMgr {
-    @PartitionKey(1)
-    private String mst;
+  @PartitionKey(1)
+  private String mst;
 
-    @PartitionKey(2)
-    private Instant ntao;
+  @PartitionKey(2)
+  private Instant ntao;
 
-    @ClusteringColumn
-    private UUID id;
+  @ClusteringColumn
+  private UUID id;
 
-    private String mso;
-    private String ddanh;
-    private String ten;
-    private String tnnt;
-    private Byte ltbao;
+  private String mso;
+  private String ddanh;
+  private String ten;
+  private String tnnt;
+  private Byte ltbao;
 
-    // private THKTDLieu thop;
-    private Byte thop;
+  // private THKTDLieu thop;
+  private Byte thop;
 
-    private String ccu;
-    private Instant nnhan;
+  private String ccu;
+  private Instant nnhan;
 
-    // private PTHDon ptgui;
-    private Byte ptgui;
+  // private PTHDon ptgui;
+  private Byte ptgui;
 
-    private String tvandnkntt;
-    private String mtdtchieu;
-    private Integer sluong;
-    private String mcqt;
-    private String tcqt;
-    private List<UDTTBKTDLieu> ttctiet;
-    private Instant ncnhat;
-    private String pban;
+  private String tvandnkntt;
+  private String mtdtchieu;
+  private Integer sluong;
+  private String mcqt;
+  private String tcqt;
+  private List<UDTTBKTDLieu> ttctiet;
+  private Instant ncnhat;
+  private String pban;
 
-    // private TTXLKTDLieu ttxly;
-    private Byte ttxly;
+  // private TTXLKTDLieu ttxly;
+  private Byte ttxly;
 
-    private String so;
-    private Instant ngay;
-    private Instant nky;
-    private String mlky;
-    private String tlky;
-    private String cks;
-    private UUID hsgoc;
+  private String so;
+  private Instant ngay;
+  private Instant nky;
+  private String mlky;
+  private String tlky;
+  private String cks;
+  private UUID hsgoc;
 
-    // private TTTBKTDLieu tttbao;
-    private Byte tttbao;
+  // private TTTBKTDLieu tttbao;
+  private Byte tttbao;
 
-    private Instant ngtbao;
-    private String mtdiep;
-    private String mlgtbao;
-    private String tlgtbao;
-    private List<UDTLoi> dsloi;
-    private String khhdon;
-    private Byte khmshdon;
-    private String mdvqhnsach;
-    private Integer shdon;
-    private Instant tdlap;
-    private String tlhdon;
+  private Instant ngtbao;
+  private String mtdiep;
+  private String mlgtbao;
+  private String tlgtbao;
+  private List<UDTLoi> dsloi;
+  private String khhdon;
+  private Byte khmshdon;
+  private String mdvqhnsach;
+  private Integer shdon;
+  private Instant tdlap;
+  private String tlhdon;
 }

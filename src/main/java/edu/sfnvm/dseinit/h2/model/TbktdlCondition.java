@@ -20,20 +20,20 @@ import static javax.persistence.GenerationType.IDENTITY;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TbktdlCondition {
-    @Id
-    @GeneratedValue(strategy = IDENTITY)
-    private long rnid;
+  @Id
+  @GeneratedValue(strategy = IDENTITY)
+  private long rnid;
 
-    @Column(nullable = false)
-    private String mst;
+  @Column(nullable = false)
+  private String mst;
 
-    @Column(nullable = false)
-    private UUID id;
+  @Column(nullable = false)
+  private UUID id;
 
-    @Column(nullable = false)
-    private Instant ntao;
+  @Column(nullable = false)
+  private Instant ntao;
 
-    private Long wsize;
+  private Long wsize;
 
-    private Double psize;
+  private Double psize;
 }

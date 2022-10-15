@@ -6,6 +6,6 @@ import edu.sfnvm.dseinit.repository.mapper.TbktdLieuMgrRepository;
 
 @Mapper
 public interface InventoryMapper {
-    @DaoFactory
-    TbktdLieuMgrRepository tbktDLieuMgrRepository();
+  @DaoFactory
+  TbktdLieuMgrRepository tbktDLieuMgrRepository();
 }

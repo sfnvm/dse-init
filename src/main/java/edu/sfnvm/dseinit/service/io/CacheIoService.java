@@ -19,78 +19,78 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class CacheIoService {
-    private final CacheManager cacheManager;
-    private final SaveTimeoutCache saveTimeoutCache;
-    private final StateTimeoutCache stateTimeoutCache;
+  private final CacheManager cacheManager;
+  private final SaveTimeoutCache saveTimeoutCache;
+  private final StateTimeoutCache stateTimeoutCache;
 
-    @Autowired
-    public CacheIoService(
-        CacheManager cacheManager,
-        SaveTimeoutCache saveTimeoutCache,
-        StateTimeoutCache stateTimeoutCache) {
-        this.cacheManager = cacheManager;
-        this.saveTimeoutCache = saveTimeoutCache;
-        this.stateTimeoutCache = stateTimeoutCache;
-    }
+  @Autowired
+  public CacheIoService(
+    CacheManager cacheManager,
+    SaveTimeoutCache saveTimeoutCache,
+    StateTimeoutCache stateTimeoutCache) {
+    this.cacheManager = cacheManager;
+    this.saveTimeoutCache = saveTimeoutCache;
+    this.stateTimeoutCache = stateTimeoutCache;
+  }
 
-    public List<TbktdLieuMgr> getMgrTimeoutCache() {
-        Cache<Object, Object> nativeCache = getCache(CacheConstants.SAVE);
-        if (nativeCache == null) {
-            return new ArrayList<>();
-        }
-        List<TbktdLieuMgr> cachedList = nativeCache.asMap().values()
-            .stream()
-            .map(TbktdLieuMgr.class::cast)
-            .collect(Collectors.toList());
-        log.debug("Cache current size {}", cachedList.size());
-        return cachedList;
+  public List<TbktdLieuMgr> getMgrTimeoutCache() {
+    Cache<Object, Object> nativeCache = getCache(CacheConstants.SAVE);
+    if (nativeCache == null) {
+      return new ArrayList<>();
     }
+    List<TbktdLieuMgr> cachedList = nativeCache.asMap().values()
+      .stream()
+      .map(TbktdLieuMgr.class::cast)
+      .collect(Collectors.toList());
+    log.debug("Cache current size {}", cachedList.size());
+    return cachedList;
+  }
 
-    public List<StateTimeoutDto> getStateTimeoutCache() {
-        Cache<Object, Object> nativeCache = getCache(CacheConstants.STATE);
-        if (nativeCache == null) {
-            return new ArrayList<>();
-        }
-        List<StateTimeoutDto> cachedList = nativeCache.asMap().values()
-            .stream()
-            .map(StateTimeoutDto.class::cast)
-            .collect(Collectors.toList());
-        log.debug("Cache current size {}", cachedList.size());
-        return cachedList;
+  public List<StateTimeoutDto> getStateTimeoutCache() {
+    Cache<Object, Object> nativeCache = getCache(CacheConstants.STATE);
+    if (nativeCache == null) {
+      return new ArrayList<>();
     }
+    List<StateTimeoutDto> cachedList = nativeCache.asMap().values()
+      .stream()
+      .map(StateTimeoutDto.class::cast)
+      .collect(Collectors.toList());
+    log.debug("Cache current size {}", cachedList.size());
+    return cachedList;
+  }
 
-    /**
-     * Generic get Caches
-     */
-    private Cache<Object, Object> getCache(String cacheName) {
-        CaffeineCache caffeineCache = (CaffeineCache) cacheManager.getCache(cacheName);
-        if (caffeineCache == null) {
-            return null;
-        } else {
-            return caffeineCache.getNativeCache();
-        }
+  /**
+   * Generic get Caches
+   */
+  private Cache<Object, Object> getCache(String cacheName) {
+    CaffeineCache caffeineCache = (CaffeineCache) cacheManager.getCache(cacheName);
+    if (caffeineCache == null) {
+      return null;
+    } else {
+      return caffeineCache.getNativeCache();
     }
+  }
 
-    /**
-     * Put caches
-     */
-    public TbktdLieuMgr putMgrTimeoutCache(TbktdLieuMgr tbktdLieuNew) {
-        return saveTimeoutCache.cache(tbktdLieuNew);
-    }
+  /**
+   * Put caches
+   */
+  public TbktdLieuMgr putMgrTimeoutCache(TbktdLieuMgr tbktdLieuNew) {
+    return saveTimeoutCache.cache(tbktdLieuNew);
+  }
 
-    public StateTimeoutDto putStateTimeoutCache(StateTimeoutDto stateTimeoutDto) {
-        stateTimeoutCache.cache(stateTimeoutDto);
-        return stateTimeoutCache.cache(stateTimeoutDto);
-    }
+  public StateTimeoutDto putStateTimeoutCache(StateTimeoutDto stateTimeoutDto) {
+    stateTimeoutCache.cache(stateTimeoutDto);
+    return stateTimeoutCache.cache(stateTimeoutDto);
+  }
 
-    /**
-     * Clear caches
-     */
-    public void clearMgrTimeoutCache() {
-        saveTimeoutCache.clearCache();
-    }
+  /**
+   * Clear caches
+   */
+  public void clearMgrTimeoutCache() {
+    saveTimeoutCache.clearCache();
+  }
 
-    public void clearStateTimeoutCache() {
-        stateTimeoutCache.clearCache();
-    }
+  public void clearStateTimeoutCache() {
+    stateTimeoutCache.clearCache();
+  }
 }
